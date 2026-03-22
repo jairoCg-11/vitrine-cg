@@ -1,0 +1,48 @@
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vitrine_network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    networks:
+      - vitrine_network
+      - security-links_security-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.vitrine-minio.rule=Host(`storage.vitrine-cg.com.br`)"
+        - "traefik.http.routers.vitrine-minio.entrypoints=websecure"
+        - "traefik.http.routers.vitrine-minio.tls.certresolver=letsencrypt"
+        - "traefik.http.services.vitrine-minio.loadbalancer.server.port=9000"
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  vitrine_network:
+    driver: overlay
+  security-links_security-network:
+    external: true
