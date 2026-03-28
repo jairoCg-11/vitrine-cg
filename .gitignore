@@ -35,3 +35,6 @@ apps/backend/.venv/
 __pycache__/
 *.pyc
 *.pyo
+
+# Env local do backend
+apps/backend/.env.local

@@ -2,8 +2,13 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
-# Caminho absoluto até a raiz do monorepo (dois níveis acima de apps/backend)
+# Caminhos possíveis do .env
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
+LOCAL_ENV = Path(__file__).resolve().parent.parent / ".env.local"
+ROOT_ENV = ROOT_DIR / ".env"
+
+# Usa .env.local se existir (desenvolvimento local fora do Docker)
+ENV_FILE = str(LOCAL_ENV) if LOCAL_ENV.exists() else str(ROOT_ENV)
 
 
 class Settings(BaseSettings):
@@ -34,9 +39,9 @@ class Settings(BaseSettings):
         )
 
     class Config:
-        env_file = str(ROOT_DIR / ".env")
+        env_file = ENV_FILE
         env_file_encoding = "utf-8"
-        extra = "ignore"  # ignora variáveis do .env que não pertencem ao backend
+        extra = "ignore"
 
 
 # Instância global — importar em qualquer arquivo com: from app.config import settings
