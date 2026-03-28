@@ -1,0 +1,29 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.config import settings
+
+app = FastAPI(
+    title="Vitrine CG API",
+    description="API do shopping virtual popular de Campina Grande",
+    version="0.1.0",
+)
+
+# Configuração de CORS — permite o frontend Next.js consumir a API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/health", tags=["Sistema"])
+def health_check():
+    """Verifica se a API está no ar."""
+    return {
+        "status": "ok",
+        "service": "vitrine-cg-api",
+        "version": "0.1.0",
+    }
