@@ -6,8 +6,8 @@ from app.database import get_db
 from app.models.user import User
 from app.services.auth import decode_access_token
 
-# Esquema OAuth2 — aponta para a rota de login
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+# Aponta para /auth/token — rota OAuth2 para o Swagger funcionar
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 def get_current_user(
