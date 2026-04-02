@@ -18,6 +18,7 @@ class ProductUpdate(BaseModel):
     price: Optional[Decimal] = None
     category: Optional[str] = None
     is_available: Optional[bool] = None
+    image_url: Optional[str] = None
 
 
 class ProductResponse(BaseModel):

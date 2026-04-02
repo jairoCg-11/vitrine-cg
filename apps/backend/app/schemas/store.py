@@ -21,6 +21,8 @@ class StoreUpdate(BaseModel):
     whatsapp: Optional[str] = None
     instagram: Optional[str] = None
     is_open: Optional[bool] = None
+    logo_url: Optional[str] = None
+    cover_url: Optional[str] = None
 
 
 class StoreResponse(BaseModel):

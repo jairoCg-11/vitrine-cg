@@ -2,12 +2,10 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
-# Caminhos possíveis do .env
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 LOCAL_ENV = Path(__file__).resolve().parent.parent / ".env.local"
 ROOT_ENV = ROOT_DIR / ".env"
 
-# Usa .env.local se existir (desenvolvimento local fora do Docker)
 ENV_FILE = str(LOCAL_ENV) if LOCAL_ENV.exists() else str(ROOT_ENV)
 
 
@@ -25,6 +23,7 @@ class Settings(BaseSettings):
     minio_access_key: str
     minio_secret_key: str
     minio_bucket_produtos: str = "produtos"
+    minio_public_url: str = "http://localhost:9000"
 
     # Backend
     backend_port: int = 8000
@@ -44,5 +43,4 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 
-# Instância global — importar em qualquer arquivo com: from app.config import settings
 settings = Settings()

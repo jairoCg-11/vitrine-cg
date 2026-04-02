@@ -156,3 +156,124 @@ def delete_my_product(
             detail="Produto não encontrado.",
         )
     delete_product(db, product)
+
+
+# ==============================
+# ROTAS DE UPLOAD DE IMAGENS
+# ==============================
+
+from fastapi import UploadFile, File
+from app.services.storage import upload_image, delete_image
+
+ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
+MAX_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+def validate_image(file: UploadFile) -> None:
+    """Valida tipo e tamanho da imagem enviada."""
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Formato inválido. Use JPEG, PNG ou WebP.",
+        )
+
+
+@router.post("/me/logo", response_model=StoreResponse)
+async def upload_logo(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_lojista),
+):
+    """Faz upload da logo da loja. Apenas lojistas."""
+    store = get_store_by_owner(db, current_user.id)
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Você ainda não tem uma loja cadastrada.",
+        )
+
+    validate_image(file)
+    data = await file.read()
+
+    if len(data) > MAX_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Imagem muito grande. Máximo 5MB.",
+        )
+
+    # Remove logo antiga se existir
+    if store.logo_url:
+        delete_image(store.logo_url)
+
+    url = upload_image(data, file.content_type, "logos")
+    return update_store(db, store, StoreUpdate(logo_url=url))
+
+
+@router.post("/me/cover", response_model=StoreResponse)
+async def upload_cover(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_lojista),
+):
+    """Faz upload da foto de capa da loja. Apenas lojistas."""
+    store = get_store_by_owner(db, current_user.id)
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Você ainda não tem uma loja cadastrada.",
+        )
+
+    validate_image(file)
+    data = await file.read()
+
+    if len(data) > MAX_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Imagem muito grande. Máximo 5MB.",
+        )
+
+    # Remove capa antiga se existir
+    if store.cover_url:
+        delete_image(store.cover_url)
+
+    url = upload_image(data, file.content_type, "covers")
+    return update_store(db, store, StoreUpdate(cover_url=url))
+
+
+@router.post("/me/products/{product_id}/image", response_model=ProductResponse)
+async def upload_product_image(
+    product_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_lojista),
+):
+    """Faz upload da foto do produto. Apenas lojistas."""
+    store = get_store_by_owner(db, current_user.id)
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Você ainda não tem uma loja cadastrada.",
+        )
+
+    product = get_product_by_id(db, product_id, store.id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Produto não encontrado.",
+        )
+
+    validate_image(file)
+    data = await file.read()
+
+    if len(data) > MAX_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Imagem muito grande. Máximo 5MB.",
+        )
+
+    # Remove imagem antiga se existir
+    if product.image_url:
+        delete_image(product.image_url)
+
+    url = upload_image(data, file.content_type, "products")
+    return update_product(db, product, ProductUpdate(image_url=url))
