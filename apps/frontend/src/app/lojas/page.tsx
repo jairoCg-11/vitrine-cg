@@ -1,0 +1,91 @@
+import { publicAPI, Store } from "@/lib/api";
+import Header from "@/components/layout/Header";
+import StoreCard from "@/components/store/StoreCard";
+import Link from "next/link";
+
+async function getStores(): Promise<Store[]> {
+  try {
+    return await publicAPI.getStores();
+  } catch {
+    return [];
+  }
+}
+
+interface Props {
+  searchParams: Promise<{ categoria?: string }>;
+}
+
+export default async function LojasPage({ searchParams }: Props) {
+  const { categoria } = await searchParams;
+  const stores = await getStores();
+  const segments = [...new Set(stores.map((s) => s.segment).filter(Boolean))];
+  const filtered = categoria
+    ? stores.filter((s) => s.segment === categoria)
+    : stores;
+
+  return (
+    <div className="min-h-screen">
+      <Header />
+
+      <section className="bg-gradient-to-r from-shopping-dark to-shopping-medium text-white py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-black mb-2">🏪 Todas as Lojas</h1>
+          <p className="text-white/70">
+            {filtered.length} {filtered.length === 1 ? "loja encontrada" : "lojas encontradas"}
+            {categoria && ` em "${categoria}"`}
+          </p>
+        </div>
+      </section>
+
+      <section className="bg-white border-b py-4 px-4 sticky top-16 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            <Link
+              href="/lojas"
+              className={`flex-shrink-0 badge px-4 py-2 text-sm transition-colors ${
+                !categoria ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
+              }`}
+            >
+              Todas
+            </Link>
+            {segments.map((seg) => (
+              <Link
+                key={seg}
+                href={`/lojas?categoria=${seg}`}
+                className={`flex-shrink-0 badge px-4 py-2 text-sm transition-colors capitalize ${
+                  categoria === seg ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-700"
+                }`}
+              >
+                {seg}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          {filtered.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-6xl mb-4">🔍</p>
+              <p className="text-gray-500 text-lg">Nenhuma loja encontrada.</p>
+              <Link href="/lojas" className="btn-primary mt-6 inline-block">
+                Ver todas as lojas
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filtered.map((store) => (
+                <StoreCard key={store.id} store={store} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <footer className="bg-gray-900 text-white/60 py-8 px-4 text-center text-sm">
+        <p>© 2026 Vitrine CG — Shopping Virtual Popular de Campina Grande</p>
+      </footer>
+    </div>
+  );
+}

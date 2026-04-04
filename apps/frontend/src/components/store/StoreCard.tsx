@@ -12,9 +12,10 @@ export default function StoreCard({ store }: Props) {
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!store.whatsapp) return;
     window.open(
-      `https://wa.me/55${store.whatsapp?.replace(/\D/g, "")}?text=Olá! Vi sua loja no Vitrine CG e tenho interesse!`,
-      "_blank"
+      `https://wa.me/55${store.whatsapp.replace(/\D/g, "")}?text=Olá! Vi sua loja no Vitrine CG e tenho interesse!`,
+      "_blank",
     );
   };
 
@@ -28,6 +29,8 @@ export default function StoreCard({ store }: Props) {
               src={store.cover_url}
               alt={store.name}
               fill
+              unoptimized={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
@@ -35,13 +38,9 @@ export default function StoreCard({ store }: Props) {
               🏪
             </div>
           )}
-
-          {/* Badge aberta/fechada */}
           <div className="absolute top-3 right-3">
             <span
-              className={`badge ${
-                store.is_open ? "bg-green-500 text-white" : "bg-gray-500 text-white"
-              }`}
+              className={`badge ${store.is_open ? "bg-green-500 text-white" : "bg-gray-500 text-white"}`}
             >
               {store.is_open ? "● Aberta" : "● Fechada"}
             </span>
@@ -51,7 +50,6 @@ export default function StoreCard({ store }: Props) {
         {/* Info */}
         <div className="p-4">
           <div className="flex items-start gap-3">
-            {/* Logo */}
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 border-2 border-white shadow-md -mt-8 relative z-10">
               {store.logo_url ? (
                 <Image
@@ -59,6 +57,7 @@ export default function StoreCard({ store }: Props) {
                   alt={store.name}
                   width={48}
                   height={48}
+                  unoptimized={true}
                   className="object-cover w-full h-full"
                 />
               ) : (
@@ -90,7 +89,6 @@ export default function StoreCard({ store }: Props) {
             <p className="text-gray-400 text-xs mt-2">📍 {store.location}</p>
           )}
 
-          {/* WhatsApp */}
           {store.whatsapp && (
             <button
               onClick={handleWhatsApp}
