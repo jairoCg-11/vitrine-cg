@@ -9,6 +9,7 @@ class ProductCreate(BaseModel):
     description: Optional[str] = None
     price: Decimal
     category: Optional[str] = None
+    sizes: Optional[str] = None  # ex: "PP,P,M,G"
 
 
 class ProductUpdate(BaseModel):
@@ -17,6 +18,7 @@ class ProductUpdate(BaseModel):
     description: Optional[str] = None
     price: Optional[Decimal] = None
     category: Optional[str] = None
+    sizes: Optional[str] = None
     is_available: Optional[bool] = None
     image_url: Optional[str] = None
 
@@ -29,6 +31,7 @@ class ProductResponse(BaseModel):
     description: Optional[str]
     price: Decimal
     category: Optional[str]
+    sizes: Optional[str]
     image_url: Optional[str]
     is_available: bool
 

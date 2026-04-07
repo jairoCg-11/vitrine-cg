@@ -6,10 +6,12 @@ from pydantic import BaseModel
 class PublicProductResponse(BaseModel):
     """Dados do produto visíveis para o consumidor."""
     id: int
+    store_id: int
     name: str
     description: Optional[str]
     price: Decimal
     category: Optional[str]
+    sizes: Optional[str]
     image_url: Optional[str]
     is_available: bool
 

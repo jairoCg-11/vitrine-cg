@@ -27,6 +27,7 @@ interface Product {
   name: string;
   price: string;
   category: string | null;
+  sizes: string | null;
   image_url: string | null;
   is_available: boolean;
 }
@@ -38,6 +39,7 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [hasStore, setHasStore] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isLoading && !token) {
@@ -71,6 +73,22 @@ export default function DashboardPage() {
       console.error("Erro ao carregar dados");
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const handleDeleteProduct = async (id: number, name: string) => {
+    if (!confirm(`Excluir "${name}"? Esta ação é irreversível.`)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`${API_URL}/stores/me/products/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setProducts((prev) => prev.filter((p) => p.id !== id));
+    } catch {
+      console.error("Erro ao excluir produto");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -231,14 +249,25 @@ export default function DashboardPage() {
                         <th className="text-left py-3 px-2 font-semibold text-gray-600">Categoria</th>
                         <th className="text-left py-3 px-2 font-semibold text-gray-600">Preço</th>
                         <th className="text-left py-3 px-2 font-semibold text-gray-600">Status</th>
-                        <th className="text-left py-3 px-2 font-semibold text-gray-600">Ações</th>
+                        <th className="text-right py-3 px-2 font-semibold text-gray-600">Ações</th>
                       </tr>
                     </thead>
                     <tbody>
                       {products.map((product) => (
                         <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50">
                           <td className="py-3 px-2 font-medium text-gray-900">{product.name}</td>
-                          <td className="py-3 px-2 text-gray-500">{product.category || "—"}</td>
+                          <td className="py-3 px-2 text-gray-500">
+                            <span>{product.category || "—"}</span>
+                            {product.sizes && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {product.sizes.split(",").map((s) => (
+                                  <span key={s} className="badge bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5">
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
                           <td className="py-3 px-2 font-semibold text-orange-600">
                             R$ {Number(product.price).toFixed(2).replace(".", ",")}
                           </td>
@@ -248,12 +277,21 @@ export default function DashboardPage() {
                             </span>
                           </td>
                           <td className="py-3 px-2">
-                            <Link
-                              href={`/dashboard/produtos/${product.id}/editar`}
-                              className="text-orange-600 hover:text-orange-700 font-semibold"
-                            >
-                              Editar
-                            </Link>
+                            <div className="flex items-center justify-end gap-3">
+                              <Link
+                                href={`/dashboard/produtos/${product.id}/editar`}
+                                className="text-orange-600 hover:text-orange-700 font-semibold"
+                              >
+                                Editar
+                              </Link>
+                              <button
+                                onClick={() => handleDeleteProduct(product.id, product.name)}
+                                disabled={deletingId === product.id}
+                                className="text-red-500 hover:text-red-600 font-semibold disabled:opacity-40"
+                              >
+                                {deletingId === product.id ? "..." : "Excluir"}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

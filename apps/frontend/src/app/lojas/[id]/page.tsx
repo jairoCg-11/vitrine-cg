@@ -120,6 +120,7 @@ export default async function StorePage({ params }: Props) {
                   product={product}
                   whatsappUrl={whatsappUrl}
                   storeName={store.name}
+                  storeId={store.id}
                 />
               ))}
             </div>

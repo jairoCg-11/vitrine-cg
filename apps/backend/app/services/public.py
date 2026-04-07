@@ -29,6 +29,21 @@ def get_store_with_products(db: Session, store_id: int) -> Optional[Store]:
     )
 
 
+def get_product_public(db: Session, store_id: int, product_id: int) -> Optional[Product]:
+    """Retorna um produto disponível de uma loja ativa."""
+    return (
+        db.query(Product)
+        .join(Store)
+        .filter(
+            Product.id == product_id,
+            Product.store_id == store_id,
+            Product.is_available == True,
+            Store.is_active == True,
+        )
+        .first()
+    )
+
+
 def get_products_by_store_public(db: Session, store_id: int) -> List[Product]:
     """Retorna produtos disponíveis de uma loja ativa."""
     store = db.query(Store).filter(

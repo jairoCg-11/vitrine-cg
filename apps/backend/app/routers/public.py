@@ -12,6 +12,7 @@ from app.schemas.public import (
 )
 from app.services.public import (
     get_active_stores,
+    get_product_public,
     get_products_by_store_public,
     get_store_with_products,
     search,
@@ -48,6 +49,18 @@ def list_store_products(store_id: int, db: Session = Depends(get_db)):
             detail="Loja não encontrada ou sem produtos disponíveis.",
         )
     return products
+
+
+@router.get("/stores/{store_id}/products/{product_id}", response_model=PublicProductResponse)
+def get_store_product(store_id: int, product_id: int, db: Session = Depends(get_db)):
+    """Retorna um produto específico de uma loja. Sem autenticação."""
+    product = get_product_public(db, store_id, product_id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Produto não encontrado.",
+        )
+    return product
 
 
 @router.get("/search", response_model=SearchResponse)

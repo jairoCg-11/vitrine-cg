@@ -86,6 +86,9 @@ export default async function BuscaPage({ searchParams }: Props) {
                     />
                   ))}
                 </div>
+                <p className="text-xs text-gray-400 mt-4">
+                  Clique em um produto para ver detalhes e entrar em contato com a loja.
+                </p>
               </div>
             )}
           </>

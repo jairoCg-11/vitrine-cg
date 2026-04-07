@@ -20,6 +20,7 @@ class Product(Base):
     description = Column(Text, nullable=True)
     price = Column(Numeric(10, 2), nullable=False)
     category = Column(String(100), nullable=True)
+    sizes = Column(String(100), nullable=True)  # ex: "PP,P,M,G,GG,XG"
 
     # Imagem
     image_url = Column(String(500), nullable=True)

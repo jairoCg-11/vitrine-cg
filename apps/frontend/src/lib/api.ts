@@ -21,9 +21,11 @@ export async function fetchAPI<T>(
 
 // Rotas públicas
 export const publicAPI = {
-  getStores: () => fetchAPI<Store[]>("/public/stores"),
-  getStore:  (id: number) => fetchAPI<StoreDetail>(`/public/stores/${id}`),
-  search:    (q: string) => fetchAPI<SearchResult>(`/public/search?q=${q}`),
+  getStores:  () => fetchAPI<Store[]>("/public/stores"),
+  getStore:   (id: number) => fetchAPI<StoreDetail>(`/public/stores/${id}`),
+  getProduct: (storeId: number, productId: number) =>
+    fetchAPI<Product>(`/public/stores/${storeId}/products/${productId}`),
+  search:     (q: string) => fetchAPI<SearchResult>(`/public/search?q=${q}`),
 };
 
 // Tipos
@@ -47,6 +49,7 @@ export interface Product {
   description: string | null;
   price: string;
   category: string | null;
+  sizes: string | null;
   image_url: string | null;
   is_available: boolean;
 }
