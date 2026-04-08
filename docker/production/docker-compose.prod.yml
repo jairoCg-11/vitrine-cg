@@ -31,7 +31,7 @@ services:
         condition: on-failure
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.vitrine-minio.rule=Host(`storage.vitrine-cg.com.br`)"
+        - "traefik.http.routers.vitrine-minio.rule=Host(`storage.vitrine-cg.inovautomatica.com`)"
         - "traefik.http.routers.vitrine-minio.entrypoints=websecure"
         - "traefik.http.routers.vitrine-minio.tls.certresolver=letsencrypt"
         - "traefik.http.services.vitrine-minio.loadbalancer.server.port=9000"
@@ -44,8 +44,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_PRODUTOS: ${MINIO_BUCKET_PRODUTOS}
+      MINIO_PUBLIC_URL: https://storage.vitrine-cg.inovautomatica.com
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
     networks:
@@ -60,10 +63,42 @@ services:
         condition: on-failure
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.vitrine-backend.rule=Host(`api.vitrine-cg.com.br`)"
+        - "traefik.http.routers.vitrine-backend.rule=Host(`api.vitrine-cg.inovautomatica.com`)"
         - "traefik.http.routers.vitrine-backend.entrypoints=websecure"
         - "traefik.http.routers.vitrine-backend.tls.certresolver=letsencrypt"
         - "traefik.http.services.vitrine-backend.loadbalancer.server.port=8000"
+        # Segurança — headers HTTP
+        - "traefik.http.middlewares.vitrine-headers.headers.stsSeconds=31536000"
+        - "traefik.http.middlewares.vitrine-headers.headers.stsIncludeSubdomains=true"
+        - "traefik.http.middlewares.vitrine-headers.headers.forceSTSHeader=true"
+        - "traefik.http.routers.vitrine-backend.middlewares=vitrine-headers"
+
+  frontend:
+    image: vitrine-cg-frontend:latest
+    environment:
+      NODE_ENV: production
+    networks:
+      - vitrine_network
+      - security-links_security-network
+    depends_on:
+      - backend
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.vitrine-frontend.rule=Host(`vitrine-cg.inovautomatica.com`)"
+        - "traefik.http.routers.vitrine-frontend.entrypoints=websecure"
+        - "traefik.http.routers.vitrine-frontend.tls.certresolver=letsencrypt"
+        - "traefik.http.services.vitrine-frontend.loadbalancer.server.port=3000"
+        # Segurança — headers HTTP
+        - "traefik.http.middlewares.vitrine-frontend-headers.headers.stsSeconds=31536000"
+        - "traefik.http.middlewares.vitrine-frontend-headers.headers.stsIncludeSubdomains=true"
+        - "traefik.http.middlewares.vitrine-frontend-headers.headers.forceSTSHeader=true"
+        - "traefik.http.middlewares.vitrine-frontend-headers.headers.contentTypeNosniff=true"
+        - "traefik.http.middlewares.vitrine-frontend-headers.headers.browserXssFilter=true"
+        - "traefik.http.routers.vitrine-frontend.middlewares=vitrine-frontend-headers"
 
 volumes:
   postgres_data:

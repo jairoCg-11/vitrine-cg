@@ -27,8 +27,17 @@ export default async function HomePage() {
       <Header />
 
       {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-shopping-dark via-shopping-medium to-shopping-light text-white py-20 px-4">
-        <div className="max-w-7xl mx-auto text-center">
+      <section
+        className="relative text-white py-20 px-4"
+        style={{
+          backgroundImage: `url(https://storage.vitrine-cg.inovautomatica.com/produtos/site/capa-hero.jpg)`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Overlay escuro — garante legibilidade do texto sobre a foto */}
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative z-10 max-w-7xl mx-auto text-center">
           <span className="badge bg-white/10 text-orange-300 border border-orange-500/30 mb-4 text-sm px-4 py-2">
             🛍️ Shopping Popular de Campina Grande
           </span>
