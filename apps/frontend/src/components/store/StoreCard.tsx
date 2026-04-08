@@ -6,9 +6,13 @@ import { Store } from "@/lib/api";
 
 interface Props {
   store: Store;
+  // Quando true, aplica borda e visual especial de destaque
+  featured?: boolean;
 }
 
-export default function StoreCard({ store }: Props) {
+export default function StoreCard({ store, featured = false }: Props) {
+  const isPremium = store.plan === "premium";
+
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -21,7 +25,20 @@ export default function StoreCard({ store }: Props) {
 
   return (
     <Link href={`/lojas/${store.id}`}>
-      <div className="card cursor-pointer group">
+      <div
+        className={`card cursor-pointer group relative ${
+          isPremium ? "ring-2 ring-orange-400 shadow-orange-100 shadow-lg" : ""
+        }`}
+      >
+        {/* Badge destaque — aparece no canto superior esquerdo */}
+        {isPremium && (
+          <div className="absolute top-3 left-3 z-10">
+            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-orange-500 to-amber-400 text-white text-xs font-black px-2.5 py-1 rounded-full shadow-md">
+              ⭐ Destaque
+            </span>
+          </div>
+        )}
+
         {/* Capa */}
         <div className="relative h-36 bg-gradient-to-br from-blue-900 to-red-500 overflow-hidden">
           {store.cover_url ? (
@@ -38,9 +55,15 @@ export default function StoreCard({ store }: Props) {
               🏪
             </div>
           )}
+
+          {/* Badge aberta/fechada — direita */}
           <div className="absolute top-3 right-3">
             <span
-              className={`badge ${store.is_open ? "bg-green-500 text-white" : "bg-gray-500 text-white"}`}
+              className={`badge ${
+                store.is_open
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-500 text-white"
+              }`}
             >
               {store.is_open ? "● Aberta" : "● Fechada"}
             </span>
@@ -50,7 +73,12 @@ export default function StoreCard({ store }: Props) {
         {/* Info */}
         <div className="p-4">
           <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 border-2 border-white shadow-md -mt-8 relative z-10">
+            {/* Logo com sobreposição */}
+            <div
+              className={`w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 border-2 shadow-md -mt-8 relative z-10 ${
+                isPremium ? "border-orange-400" : "border-white"
+              }`}
+            >
               {store.logo_url ? (
                 <Image
                   src={store.logo_url}
@@ -67,8 +95,14 @@ export default function StoreCard({ store }: Props) {
               )}
             </div>
 
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-gray-900 truncate group-hover:text-orange-600 transition-colors">
+            <div className="flex-1 min-w-0 mt-1">
+              <h3
+                className={`font-bold truncate transition-colors ${
+                  isPremium
+                    ? "text-gray-900 group-hover:text-orange-600"
+                    : "text-gray-900 group-hover:text-orange-600"
+                }`}
+              >
                 {store.name}
               </h3>
               {store.segment && (

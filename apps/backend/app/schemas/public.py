@@ -22,6 +22,7 @@ class PublicProductResponse(BaseModel):
 class PublicStoreResponse(BaseModel):
     """Dados da loja visíveis para o consumidor."""
     id: int
+    owner_id: int
     name: str
     description: Optional[str]
     segment: Optional[str]
@@ -31,6 +32,8 @@ class PublicStoreResponse(BaseModel):
     logo_url: Optional[str]
     cover_url: Optional[str]
     is_open: bool
+    # Exposto para o frontend filtrar lojas em destaque
+    plan: str
 
     class Config:
         from_attributes = True
@@ -39,6 +42,7 @@ class PublicStoreResponse(BaseModel):
 class PublicStoreDetailResponse(BaseModel):
     """Dados completos da loja com seus produtos."""
     id: int
+    owner_id: int
     name: str
     description: Optional[str]
     segment: Optional[str]
@@ -48,6 +52,7 @@ class PublicStoreDetailResponse(BaseModel):
     logo_url: Optional[str]
     cover_url: Optional[str]
     is_open: bool
+    plan: str
     products: List[PublicProductResponse] = []
 
     class Config:

@@ -2,7 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function fetchAPI<T>(
   endpoint: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
     headers: {
@@ -21,16 +21,17 @@ export async function fetchAPI<T>(
 
 // Rotas públicas
 export const publicAPI = {
-  getStores:  () => fetchAPI<Store[]>("/public/stores"),
-  getStore:   (id: number) => fetchAPI<StoreDetail>(`/public/stores/${id}`),
+  getStores: () => fetchAPI<Store[]>("/public/stores"),
+  getStore: (id: number) => fetchAPI<StoreDetail>(`/public/stores/${id}`),
   getProduct: (storeId: number, productId: number) =>
     fetchAPI<Product>(`/public/stores/${storeId}/products/${productId}`),
-  search:     (q: string) => fetchAPI<SearchResult>(`/public/search?q=${q}`),
+  search: (q: string) => fetchAPI<SearchResult>(`/public/search?q=${q}`),
 };
 
 // Tipos
 export interface Store {
   id: number;
+  owner_id: number;
   name: string;
   description: string | null;
   segment: string | null;
@@ -40,6 +41,8 @@ export interface Store {
   logo_url: string | null;
   cover_url: string | null;
   is_open: boolean;
+  // Campo plan exposto para o sistema de destaque
+  plan: "gratis" | "basico" | "premium";
 }
 
 export interface Product {
