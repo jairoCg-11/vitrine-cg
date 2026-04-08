@@ -1,6 +1,7 @@
-import { publicAPI, Store } from "@/lib/api";
+import { publicAPI, Store, Banner } from "@/lib/api";
 import Header from "@/components/layout/Header";
 import StoreCard from "@/components/store/StoreCard";
+import HeroBanner from "@/components/banner/HeroBanner";
 import Link from "next/link";
 
 async function getStores(): Promise<Store[]> {
@@ -11,71 +12,46 @@ async function getStores(): Promise<Store[]> {
   }
 }
 
+async function getBanners(): Promise<Banner[]> {
+  try {
+    return await publicAPI.getBanners();
+  } catch {
+    return [];
+  }
+}
+
 export default async function HomePage() {
-  const stores = await getStores();
+  const [stores, banners] = await Promise.all([getStores(), getBanners()]);
+
   const openStores = stores.filter((s) => s.is_open);
   const segments = [...new Set(stores.map((s) => s.segment).filter(Boolean))];
-
-  // Lojas premium — aparecem na seção de destaque
   const featuredStores = stores.filter((s) => s.plan === "premium");
-
-  // Demais lojas — aparecem na vitrine geral
   const regularStores = stores.filter((s) => s.plan !== "premium");
 
   return (
     <div className="min-h-screen">
       <Header />
 
-      {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section
-        className="relative text-white py-20 px-4"
-        style={{
-          backgroundImage: `url(https://storage.vitrine-cg.inovautomatica.com/produtos/site/capa-hero.jpg)`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        {/* Overlay escuro — garante legibilidade do texto sobre a foto */}
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 max-w-7xl mx-auto text-center">
-          <span className="badge bg-white/10 text-orange-300 border border-orange-500/30 mb-4 text-sm px-4 py-2">
-            🛍️ Shopping Popular de Campina Grande
-          </span>
-          <h1 className="text-4xl md:text-6xl font-black mt-4 mb-6 leading-tight">
-            Tudo que você precisa
-            <span className="text-orange-400"> em um só lugar</span>
-          </h1>
-          <p className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-8">
-            Compre direto com os lojistas do shopping popular. Preços imbatíveis
-            e atendimento personalizado via WhatsApp.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/lojas" className="btn-primary text-lg px-8 py-4">
-              Ver todas as lojas →
-            </Link>
-            <Link
-              href="#lojas"
-              className="border border-white/30 hover:border-white/60 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-200 inline-block"
-            >
-              Explorar agora
-            </Link>
-          </div>
+      {/* ── Hero / Carrossel ─────────────────────────────────────────────── */}
+      <HeroBanner banners={banners} />
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-6 mt-16 max-w-lg mx-auto">
-            <div className="text-center">
+      {/* ── Stats ────────────────────────────────────────────────────────── */}
+      <section className="bg-shopping-dark text-white py-6 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto text-center">
+            <div>
               <p className="text-3xl font-black text-orange-400">
                 {stores.length}
               </p>
               <p className="text-white/60 text-sm">Lojas</p>
             </div>
-            <div className="text-center border-x border-white/10">
+            <div className="border-x border-white/10">
               <p className="text-3xl font-black text-orange-400">
                 {openStores.length}
               </p>
               <p className="text-white/60 text-sm">Abertas agora</p>
             </div>
-            <div className="text-center">
+            <div>
               <p className="text-3xl font-black text-orange-400">
                 {segments.length}
               </p>
@@ -85,29 +61,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Lojas em Destaque ─────────────────────────────────────────────
-          Só renderiza se houver pelo menos uma loja premium.
-          Este é o espaço monetizado — lojistas pagam para aparecer aqui.
-      ─────────────────────────────────────────────────────────────────── */}
+      {/* ── Lojas em Destaque ─────────────────────────────────────────────── */}
       {featuredStores.length > 0 && (
         <section className="py-12 px-4 bg-gradient-to-b from-amber-50 to-white">
           <div className="max-w-7xl mx-auto">
-            {/* Cabeçalho da seção */}
-            <div className="flex items-center gap-3 mb-8">
-              <div className="flex items-center gap-2">
-                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-amber-400 rounded-full" />
-                <div>
-                  <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                    ⭐ Lojas em Destaque
-                  </h2>
-                  <p className="text-gray-500 text-sm">
-                    Selecionadas especialmente para você
-                  </p>
-                </div>
+            <div className="flex items-center gap-2 mb-8">
+              <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-amber-400 rounded-full" />
+              <div>
+                <h2 className="text-2xl font-black text-gray-900">
+                  ⭐ Lojas em Destaque
+                </h2>
+                <p className="text-gray-500 text-sm">
+                  Selecionadas especialmente para você
+                </p>
               </div>
             </div>
-
-            {/* Grid de lojas premium */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {featuredStores.map((store) => (
                 <StoreCard key={store.id} store={store} featured />
@@ -117,7 +85,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── Navegação por segmento ─────────────────────────────────────── */}
+      {/* ── Navegação por segmento ────────────────────────────────────────── */}
       {segments.length > 0 && (
         <section
           className="py-8 px-4 bg-white border-y border-gray-100"
@@ -145,7 +113,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── Vitrine geral ─────────────────────────────────────────────── */}
+      {/* ── Vitrine geral ─────────────────────────────────────────────────── */}
       <section className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
@@ -188,7 +156,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA Lojista ───────────────────────────────────────────────── */}
+      {/* ── CTA Lojista ───────────────────────────────────────────────────── */}
       <section className="bg-gradient-to-r from-orange-500 to-orange-700 py-16 px-4">
         <div className="max-w-3xl mx-auto text-center text-white">
           <h2 className="text-3xl font-black mb-4">
@@ -207,7 +175,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Footer ────────────────────────────────────────────────────── */}
+      {/* ── Footer ────────────────────────────────────────────────────────── */}
       <footer className="bg-gray-900 text-white/60 py-8 px-4 text-center text-sm">
         <p>© 2026 Vitrine CG — Shopping Virtual Popular de Campina Grande</p>
         <p className="mt-1">Feito com ❤️ para os lojistas de CG</p>

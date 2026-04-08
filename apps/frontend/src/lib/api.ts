@@ -26,6 +26,7 @@ export const publicAPI = {
   getProduct: (storeId: number, productId: number) =>
     fetchAPI<Product>(`/public/stores/${storeId}/products/${productId}`),
   search: (q: string) => fetchAPI<SearchResult>(`/public/search?q=${q}`),
+  getBanners: () => fetchAPI<Banner[]>("/public/banners"),
 };
 
 // Tipos
@@ -41,7 +42,6 @@ export interface Store {
   logo_url: string | null;
   cover_url: string | null;
   is_open: boolean;
-  // Campo plan exposto para o sistema de destaque
   plan: "gratis" | "basico" | "premium";
 }
 
@@ -64,4 +64,14 @@ export interface StoreDetail extends Store {
 export interface SearchResult {
   stores: Store[];
   products: Product[];
+}
+
+export interface Banner {
+  id: number;
+  image_url: string;
+  link_url: string | null;
+  title: string | null;
+  order: number;
+  is_active: boolean;
+  created_at: string;
 }
