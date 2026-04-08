@@ -4,7 +4,9 @@ import ProductCard from "@/components/store/ProductCard";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
+// ─── Busca os dados da loja ───────────────────────────────────────────────────
 async function getStore(id: number): Promise<StoreDetail | null> {
   try {
     return await publicAPI.getStore(id);
@@ -17,6 +19,65 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+// ─── generateMetadata ─────────────────────────────────────────────────────────
+//
+// Esta função é exclusiva do Next.js App Router.
+// Ela roda NO SERVIDOR antes de renderizar a página.
+//
+// O Next.js chama ela automaticamente quando a página é acessada.
+// O resultado vira as tags <title>, <meta description> etc. no HTML final.
+//
+// Por que isso importa para SEO?
+// Quando o Google visita /lojas/42, ele precisa ver o título e a descrição
+// no HTML puro — antes de executar qualquer JavaScript.
+// Como esta função roda no servidor, o HTML já chega com os metadados corretos.
+//
+// Sem generateMetadata → Google vê: "Vitrine CG — Shopping Virtual..."
+// Com generateMetadata → Google vê: "Moda Feminina Ana | Vitrine CG"
+//
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const store = await getStore(Number(id));
+
+  // Se a loja não existir, retorna metadado genérico
+  // (a página vai redirecionar para 404 de qualquer forma)
+  if (!store) {
+    return {
+      title: "Loja não encontrada",
+      description: "Esta loja não está disponível no Vitrine CG.",
+    };
+  }
+
+  // Monta a descrição a partir dos dados reais da loja
+  // Quanto mais informação relevante, melhor para o SEO
+  const descriptionParts = [
+    store.description,
+    store.segment && `Segmento: ${store.segment}`,
+    store.location && `Localização: ${store.location}`,
+    "Atendimento via WhatsApp no Vitrine CG — Shopping Popular de Campina Grande.",
+  ].filter(Boolean); // Remove os vazios (campos opcionais não preenchidos)
+
+  const description = descriptionParts.join(" ");
+
+  return {
+    // O template do layout.tsx vai completar automaticamente:
+    // "Moda Feminina Ana | Vitrine CG"
+    title: store.name,
+
+    description,
+
+    // Open Graph — preview no WhatsApp quando o lojista compartilhar o link
+    openGraph: {
+      title: `${store.name} — Vitrine CG`,
+      description,
+      url: `https://vitrine-cg.com.br/lojas/${store.id}`,
+      // Se a loja tiver logo, usa ela como imagem do preview
+      images: store.logo_url ? [{ url: store.logo_url, alt: store.name }] : [],
+    },
+  };
+}
+
+// ─── Componente da página ─────────────────────────────────────────────────────
 export default async function StorePage({ params }: Props) {
   const { id } = await params;
   const store = await getStore(Number(id));
@@ -70,13 +131,19 @@ export default async function StorePage({ params }: Props) {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-2xl font-black text-gray-900">{store.name}</h1>
-                  <span className={`badge ${store.is_open ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                  <h1 className="text-2xl font-black text-gray-900">
+                    {store.name}
+                  </h1>
+                  <span
+                    className={`badge ${store.is_open ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
+                  >
                     {store.is_open ? "● Aberta" : "● Fechada"}
                   </span>
                 </div>
                 {store.segment && (
-                  <span className="badge bg-orange-100 text-orange-700 mt-1">{store.segment}</span>
+                  <span className="badge bg-orange-100 text-orange-700 mt-1">
+                    {store.segment}
+                  </span>
                 )}
                 {store.description && (
                   <p className="text-gray-600 mt-2">{store.description}</p>
@@ -88,7 +155,12 @@ export default async function StorePage({ params }: Props) {
               </div>
 
               {whatsappUrl && (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-whatsapp flex-shrink-0">
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-whatsapp flex-shrink-0"
+                >
                   <span>💬</span>
                   <span>Falar no WhatsApp</span>
                 </a>
@@ -105,9 +177,16 @@ export default async function StorePage({ params }: Props) {
           {availableProducts.length === 0 ? (
             <div className="text-center py-16 bg-gray-50 rounded-2xl">
               <p className="text-4xl mb-3">📦</p>
-              <p className="text-gray-500">Nenhum produto disponível no momento.</p>
+              <p className="text-gray-500">
+                Nenhum produto disponível no momento.
+              </p>
               {whatsappUrl && (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-whatsapp inline-flex mt-4">
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-whatsapp inline-flex mt-4"
+                >
                   💬 Perguntar pelo WhatsApp
                 </a>
               )}
