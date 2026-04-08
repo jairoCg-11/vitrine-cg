@@ -1,0 +1,44 @@
+# Vitrine CG — Estado do Projeto
+
+## O que é
+Marketplace/shopping virtual popular de Campina Grande – PB.
+URL produção: https://vitrine-cg.inovautomatica.com
+API produção: https://api.vitrine-cg.inovautomatica.com
+Storage:      https://storage.vitrine-cg.inovautomatica.com
+
+## Stack
+- Frontend: Next.js 16 + Tailwind CSS 4 + TypeScript
+- Backend:  FastAPI (Python) + SQLAlchemy + Alembic
+- Banco:    PostgreSQL 15
+- Storage:  MinIO
+- Infra:    Docker Swarm + Traefik v2 (VPS Contabo 134.255.182.114)
+
+## Perfis
+- Admin:      gerencia usuários, planos e banners
+- Lojista:    cadastra loja e produtos
+- Consumidor: navega e contata via WhatsApp
+
+## Funcionalidades implementadas
+- Auth completo (JWT 7 dias, RBAC)
+- Dashboard lojista: CRUD loja, produtos, upload de imagens via MinIO
+- Painel admin: gestão de usuários, planos (gratis/basico/premium) e banners
+- Páginas públicas: home, /lojas, /lojas/[id], /lojas/[id]/produtos/[id], /busca
+- Carrossel de banners no hero (monetização)
+- Sistema de destaque: lojas premium aparecem em seção especial na home
+- SEO: metadados dinâmicos, sitemap.xml, robots.txt, 404 customizado
+- Deploy em produção com HTTPS via Traefik + Let's Encrypt
+
+## Credenciais de acesso (produção)
+- Admin: admin@vitrinecg.com / 524218Pb@
+
+## Infra local
+docker compose -f docker/development/docker-compose.dev.yml --env-file .env up -d
+cd apps/frontend && npm run dev
+
+## Próximos passos (roadmap)
+- Loading skeletons
+- error.tsx global
+- Painel admin: reordenar banners por drag-and-drop
+- Sistema de avaliações de lojas
+- Integração de pagamento (Stripe/Asaas)
+- App mobile
