@@ -26,7 +26,8 @@ export const publicAPI = {
   getProduct: (storeId: number, productId: number) =>
     fetchAPI<Product>(`/public/stores/${storeId}/products/${productId}`),
   search: (q: string) => fetchAPI<SearchResult>(`/public/search?q=${q}`),
-  getBanners: () => fetchAPI<Banner[]>("/public/banners"),
+  getBanners: () =>
+    fetchAPI<Banner[]>("/public/banners", { cache: "no-store" }),
 };
 
 // Tipos
