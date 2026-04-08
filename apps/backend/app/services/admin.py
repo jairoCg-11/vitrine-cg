@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.models.store import Store
 from app.models.user import User
 
 
@@ -42,3 +43,25 @@ def delete_user(db: Session, user_id: int) -> bool:
     db.delete(user)
     db.commit()
     return True
+
+
+# ─── Planos ───────────────────────────────────────────────────────────────────
+
+def get_store_by_id(db: Session, store_id: int) -> Optional[Store]:
+    """Retorna uma loja pelo ID."""
+    return db.query(Store).filter(Store.id == store_id).first()
+
+
+def update_store_plan(db: Session, store_id: int, plan: str) -> Optional[Store]:
+    """
+    Altera o plano de uma loja.
+    Retorna a loja atualizada ou None se não encontrada.
+    """
+    store = get_store_by_id(db, store_id)
+    if not store:
+        return None
+
+    store.plan = plan
+    db.commit()
+    db.refresh(store)
+    return store

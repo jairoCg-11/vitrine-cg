@@ -5,8 +5,19 @@ from typing import List
 from app.database import get_db
 from app.models.user import User
 from app.routers.deps import get_current_user
-from app.schemas.admin import BlockUserResponse, UserAdminResponse
-from app.services.admin import delete_user, get_all_users, get_user_by_id, toggle_block_user
+from app.schemas.admin import (
+    BlockUserResponse,
+    StorePlanResponse,
+    UpdateStorePlanRequest,
+    UserAdminResponse,
+)
+from app.services.admin import (
+    delete_user,
+    get_all_users,
+    get_user_by_id,
+    toggle_block_user,
+    update_store_plan,
+)
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -20,6 +31,8 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
         )
     return current_user
 
+
+# ─── Usuários ─────────────────────────────────────────────────────────────────
 
 @router.get("/users", response_model=List[UserAdminResponse])
 def list_users(
@@ -95,3 +108,31 @@ def remove_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuário não encontrado.",
         )
+
+
+# ─── Planos ───────────────────────────────────────────────────────────────────
+
+@router.patch("/stores/{store_id}/plan", response_model=StorePlanResponse)
+def change_store_plan(
+    store_id: int,
+    data: UpdateStorePlanRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Altera o plano de uma loja. Apenas admin.
+    Planos válidos: gratis | basico | premium
+    """
+    store = update_store_plan(db, store_id, data.plan)
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Loja não encontrada.",
+        )
+
+    return StorePlanResponse(
+        id=store.id,
+        name=store.name,
+        plan=store.plan,
+        message=f"Plano da loja '{store.name}' atualizado para '{store.plan}'.",
+    )

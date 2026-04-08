@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -25,6 +26,29 @@ class BlockUserResponse(BaseModel):
     name: str
     email: str
     is_active: bool
+    message: str
+
+    class Config:
+        from_attributes = True
+
+
+# ─── Planos ───────────────────────────────────────────────────────────────────
+
+# Literal garante que apenas os valores válidos sejam aceitos.
+# Se o admin enviar "vip" por exemplo, o FastAPI rejeita com 422.
+PlanType = Literal["gratis", "basico", "premium"]
+
+
+class UpdateStorePlanRequest(BaseModel):
+    """Corpo da requisição para alterar o plano de uma loja."""
+    plan: PlanType
+
+
+class StorePlanResponse(BaseModel):
+    """Resposta após alterar o plano de uma loja."""
+    id: int
+    name: str
+    plan: str
     message: str
 
     class Config:
