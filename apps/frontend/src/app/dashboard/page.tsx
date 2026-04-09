@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
+import { vendored } from "next/dist/server/route-modules/app-page/module.compiled";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -240,6 +241,28 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </div>
+
+            {/* ── Alerta: fotos pendentes ──────────────────────────────────── */}
+            {(!store?.cover_url || !store?.logo_url) && (
+              <Link href="/dashboard/loja/editar" className="block mb-4">
+                <div className="bg-amber-50 border-2 border-amber-300 border-dashed rounded-2xl p-4 flex items-center gap-3 hover:bg-amber-100 transition-all">
+                  <span className="text-2xl flex-shrink-0">📸</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-amber-800 text-sm">
+                      {!store?.cover_url && !store?.logo_url
+                        ? "Adicione logo e foto de capa da sua loja"
+                        : !store?.cover_url
+                          ? "Adicione uma foto de capa para sua loja"
+                          : "Adicione um logo para sua loja"}
+                    </p>
+                    <p className="text-amber-600 text-xs mt-0.5">
+                      Lojas com fotos atraem muito mais clientes. Toque para
+                      adicionar →
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            )}
 
             {/* ── Stats ────────────────────────────────────────────────────── */}
             <div className="grid grid-cols-3 gap-3 mb-4">
