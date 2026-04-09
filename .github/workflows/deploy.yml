@@ -1,6 +1,5 @@
 name: Deploy — Vitrine CG
 
-# Dispara apenas quando houver push na branch main
 on:
   push:
     branches:
@@ -12,22 +11,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ── 1. Baixa o código ──────────────────────────────────────────────────
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      # ── 2. Configura Docker Buildx ─────────────────────────────────────────
       - name: Configura Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ── 3. Build do backend ────────────────────────────────────────────────
       - name: Build — Backend
         run: |
           docker build \
             -t vitrine-cg-backend:latest \
             apps/backend/
 
-      # ── 4. Build do frontend ───────────────────────────────────────────────
       - name: Build — Frontend
         run: |
           docker build \
@@ -36,13 +31,11 @@ jobs:
             -t vitrine-cg-frontend:latest \
             apps/frontend/
 
-      # ── 5. Salva as imagens em arquivos tar.gz ─────────────────────────────
       - name: Exporta imagens Docker
         run: |
           docker save vitrine-cg-backend:latest  | gzip > /tmp/vitrine-backend.tar.gz
           docker save vitrine-cg-frontend:latest | gzip > /tmp/vitrine-frontend.tar.gz
 
-      # ── 6. Configura SSH ───────────────────────────────────────────────────
       - name: Configura chave SSH
         run: |
           mkdir -p ~/.ssh
@@ -50,7 +43,6 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      # ── 7. Envia imagens para a VPS ────────────────────────────────────────
       - name: Envia imagens para a VPS
         run: |
           scp -i ~/.ssh/id_ed25519 \
@@ -58,37 +50,23 @@ jobs:
             /tmp/vitrine-frontend.tar.gz \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/
 
-      # ── 8. Deploy na VPS ───────────────────────────────────────────────────
       - name: Deploy na VPS
         run: |
           ssh -i ~/.ssh/id_ed25519 \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-
-            set -e
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "set -e
             cd ${{ secrets.DEPLOY_PATH }}
-
-            echo "📦 Carregando imagens..."
+            echo '📦 Carregando imagens...'
             docker load < vitrine-backend.tar.gz
             docker load < vitrine-frontend.tar.gz
-
-            echo "🔄 Atualizando serviços..."
-            docker service update --image vitrine-cg-backend:latest  vitrine-cg_backend
-            docker service update --image vitrine-cg-frontend:latest vitrine-cg_frontend
-
-            echo "⏳ Aguardando estabilização..."
+            echo '🔄 Atualizando serviços...'
+            docker service update --image vitrine-cg-backend:latest --force vitrine-cg_backend
+            docker service update --image vitrine-cg-frontend:latest --force vitrine-cg_frontend
+            echo '⏳ Aguardando...'
             sleep 20
-
-            echo "🗃️ Rodando migrations..."
-            docker exec \
-              -e POSTGRES_PORT=5432 \
-              -e POSTGRES_HOST=vitrine-cg_postgres \
-              -e POSTGRES_DB=vitrine_cg \
-              -e POSTGRES_USER=vitrine_user \
-              -e POSTGRES_PASSWORD="$(grep POSTGRES_PASSWORD /opt/vitrine-cg/.env | cut -d= -f2)" \
-              $(docker ps -q -f name=vitrine-cg_backend) \
-              alembic upgrade head
-
-            echo "✅ Deploy concluído!"
-            docker service ls | grep vitrine-cg
-
-          ENDSSH
+            echo '🗃️ Migrations...'
+            PGPASS=\$(grep POSTGRES_PASSWORD ${{ secrets.DEPLOY_PATH }}/.env | cut -d= -f2)
+            docker exec -e POSTGRES_PORT=5432 -e POSTGRES_HOST=vitrine-cg_postgres -e POSTGRES_DB=vitrine_cg -e POSTGRES_USER=vitrine_user -e POSTGRES_PASSWORD=\"\$PGPASS\" \$(docker ps -q -f name=vitrine-cg_backend) alembic upgrade head
+            echo '✅ Concluído!'
+            docker service ls | grep vitrine-cg"
