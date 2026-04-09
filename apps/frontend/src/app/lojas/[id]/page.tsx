@@ -1,6 +1,7 @@
 import { publicAPI, StoreDetail } from "@/lib/api";
 import Header from "@/components/layout/Header";
 import ProductCard from "@/components/store/ProductCard";
+import StoreEditButton from "@/components/store/StoreEditButton";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -58,7 +59,7 @@ export default async function StorePage({ params }: Props) {
     <div className="min-h-screen bg-gray-50 pb-24 md:pb-0">
       <Header />
 
-      {/* ── Capa da loja ──────────────────────────────────────────────────── */}
+      {/* ── Capa ─────────────────────────────────────────────────────────── */}
       <div className="relative h-48 md:h-72 bg-gradient-to-br from-shopping-dark via-shopping-medium to-shopping-light overflow-hidden">
         {store.cover_url ? (
           <Image
@@ -71,7 +72,6 @@ export default async function StorePage({ params }: Props) {
             priority
           />
         ) : (
-          // Sem capa — exibe padrão com inicial da loja
           <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10">
             <span
               className="text-white font-black"
@@ -81,10 +81,8 @@ export default async function StorePage({ params }: Props) {
             </span>
           </div>
         )}
-        {/* Overlay gradiente */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-        {/* Breadcrumb sobre a capa */}
         <div className="absolute top-3 left-4">
           <Link
             href="/lojas"
@@ -94,7 +92,6 @@ export default async function StorePage({ params }: Props) {
           </Link>
         </div>
 
-        {/* Badge aberta/fechada sobre a capa */}
         <div className="absolute top-3 right-4">
           <span
             className={`badge text-xs ${store.is_open ? "bg-green-500 text-white" : "bg-gray-700 text-white"}`}
@@ -104,8 +101,8 @@ export default async function StorePage({ params }: Props) {
         </div>
       </div>
 
-      {/* ── Card de info da loja ──────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4">
+        {/* ── Card info ────────────────────────────────────────────────────── */}
         <div className="relative -mt-10 md:-mt-14 mb-6 md:mb-8">
           <div className="bg-white rounded-2xl shadow-xl p-4 md:p-6">
             <div className="flex items-start gap-3 md:gap-5">
@@ -142,8 +139,6 @@ export default async function StorePage({ params }: Props) {
                       )}
                     </div>
                   </div>
-
-                  {/* WhatsApp — desktop */}
                   {whatsappUrl && (
                     <a
                       href={whatsappUrl}
@@ -163,7 +158,6 @@ export default async function StorePage({ params }: Props) {
                   </p>
                 )}
 
-                {/* Infos de contato */}
                 <div className="flex flex-wrap gap-3 mt-3">
                   {store.location && (
                     <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -182,7 +176,6 @@ export default async function StorePage({ params }: Props) {
                   )}
                 </div>
 
-                {/* Stats rápidos */}
                 <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100">
                   <div className="text-center">
                     <p className="text-lg font-black text-orange-500">
@@ -217,8 +210,7 @@ export default async function StorePage({ params }: Props) {
                 Nenhum produto disponível
               </p>
               <p className="text-gray-400 text-sm mb-6">
-                Esta loja ainda não cadastrou produtos ou está atualizando o
-                catálogo.
+                Esta loja está atualizando o catálogo.
               </p>
               {whatsappUrl && (
                 <a
@@ -261,6 +253,9 @@ export default async function StorePage({ params }: Props) {
           </a>
         </div>
       )}
+
+      {/* ── Botão flutuante de edição — só para o dono da loja ──────────── */}
+      <StoreEditButton storeId={store.id} ownerId={store.owner_id} />
 
       <footer className="bg-gray-900 text-white/60 py-6 px-4 text-center text-xs">
         <p>© 2026 Vitrine CG — Shopping Virtual Popular de Campina Grande</p>
