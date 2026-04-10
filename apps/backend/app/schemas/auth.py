@@ -10,13 +10,30 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     phone: Optional[str] = None
-    role: str = "consumidor"  # padrão: consumidor
+    role: str = "consumidor"
 
 
 class UserLogin(BaseModel):
     """Dados necessários para fazer login."""
     email: EmailStr
     password: str
+
+
+class ChangePasswordRequest(BaseModel):
+    """Dados para trocar a senha estando logado."""
+    current_password: str
+    new_password: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Dados para solicitar redefinição de senha."""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Dados para redefinir a senha com token."""
+    token: str
+    new_password: str
 
 
 # --- Saída ---
@@ -31,7 +48,7 @@ class UserResponse(BaseModel):
     is_active: bool
 
     class Config:
-        from_attributes = True  # permite converter model SQLAlchemy para schema
+        from_attributes = True
 
 
 class TokenResponse(BaseModel):
@@ -39,3 +56,8 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class MessageResponse(BaseModel):
+    """Resposta simples com mensagem de confirmação."""
+    message: str

@@ -1,34 +1,31 @@
-from pathlib import Path
-
 from pydantic_settings import BaseSettings
-
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
-LOCAL_ENV = Path(__file__).resolve().parent.parent / ".env.local"
-ROOT_ENV = ROOT_DIR / ".env"
-
-ENV_FILE = str(LOCAL_ENV) if LOCAL_ENV.exists() else str(ROOT_ENV)
 
 
 class Settings(BaseSettings):
     # Banco de dados
-    postgres_host: str
+    postgres_host: str = "postgres"
     postgres_port: int = 5432
-    postgres_db: str
-    postgres_user: str
-    postgres_password: str
+    postgres_db: str = "vitrine_cg"
+    postgres_user: str = ""
+    postgres_password: str = ""
 
     # MinIO
-    minio_endpoint: str
+    minio_endpoint: str = "minio"
     minio_port: int = 9000
-    minio_access_key: str
-    minio_secret_key: str
+    minio_access_key: str = ""
+    minio_secret_key: str = ""
     minio_bucket_produtos: str = "produtos"
     minio_public_url: str = "http://localhost:9000"
 
-    # Backend
-    backend_port: int = 8000
-    jwt_secret: str
-    jwt_expires_in: str = "7d"
+    # JWT
+    jwt_secret: str = "change-me-in-production"
+
+    # Email (Gmail com App Password)
+    mail_username: str = ""
+    mail_password: str = ""
+
+    # URL do frontend — usada nos links dos emails
+    frontend_url: str = "http://localhost:3000"
 
     @property
     def database_url(self) -> str:
@@ -38,9 +35,7 @@ class Settings(BaseSettings):
         )
 
     class Config:
-        env_file = ENV_FILE
-        env_file_encoding = "utf-8"
-        extra = "ignore"
+        env_file = ".env"
 
 
 settings = Settings()

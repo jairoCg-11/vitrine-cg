@@ -1,25 +1,29 @@
 # Vitrine CG — Estado do Projeto
 
 ## O que é
+
 Marketplace/shopping virtual popular de Campina Grande – PB.
 URL produção: https://vitrine-cg.inovautomatica.com
 API produção: https://api.vitrine-cg.inovautomatica.com
-Storage:      https://storage.vitrine-cg.inovautomatica.com
-Repositório:  https://github.com/jairoCg-11/vitrine-cg
+Storage: https://storage.vitrine-cg.inovautomatica.com
+Repositório: https://github.com/jairoCg-11/vitrine-cg
 
 ## Stack
+
 - Frontend: Next.js 16 + Tailwind CSS 4 + TypeScript
-- Backend:  FastAPI (Python) + SQLAlchemy + Alembic
-- Banco:    PostgreSQL 15
-- Storage:  MinIO
-- Infra:    Docker Swarm + Traefik v2 (VPS Contabo 134.255.182.114)
+- Backend: FastAPI (Python) + SQLAlchemy + Alembic
+- Banco: PostgreSQL 15
+- Storage: MinIO
+- Infra: Docker Swarm + Traefik v2 (VPS Contabo 134.255.182.114)
 
 ## Perfis
-- Admin:      gerencia usuários, planos e banners
-- Lojista:    cadastra loja e produtos
+
+- Admin: gerencia usuários, planos e banners
+- Lojista: cadastra loja e produtos
 - Consumidor: navega e contata via WhatsApp
 
 ## Funcionalidades implementadas
+
 - Auth completo (JWT 7 dias, RBAC)
 - Dashboard lojista: CRUD loja, produtos, upload de imagens via MinIO
 - Painel admin: gestão de usuários, planos (gratis/basico/premium) e banners
@@ -38,18 +42,29 @@ Repositório:  https://github.com/jairoCg-11/vitrine-cg
 - Alerta de upload de fotos no dashboard do lojista
 
 ## Credenciais de acesso (produção)
+
 - Admin: admin@vitrinecg.com / 524218Pb@
 
 ## Infra local
+
 docker compose -f docker/development/docker-compose.dev.yml --env-file .env up -d
 cd apps/frontend && npm run dev
 
 ## Deploy
+
 git add . && git commit -m "tipo(escopo): descrição" && git push
+
 # GitHub Actions cuida do resto automaticamente (~5 min)
 
+- Thumbnails verticais à esquerda
+- Imagem principal à direita
+- Cantos arredondados
+- Preço em destaque
+- Tamanhos como botões
+- Botão WhatsApp verde
+
 ## Pendentes
-- Múltiplas imagens por produto
+
 - Reordenar banners por drag-and-drop
 - Sistema de avaliações de lojas
 - Integração de pagamento (Stripe/Asaas)

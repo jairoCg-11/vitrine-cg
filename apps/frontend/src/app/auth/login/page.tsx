@@ -52,6 +52,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-shopping-dark to-shopping-medium flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/">
             <div className="inline-flex items-center gap-3">
@@ -59,8 +60,12 @@ export default function LoginPage() {
                 V
               </div>
               <div className="text-left">
-                <p className="font-black text-xl text-white leading-none">Vitrine CG</p>
-                <p className="text-orange-400 text-sm leading-none">Painel do Lojista</p>
+                <p className="font-black text-xl text-white leading-none">
+                  Vitrine CG
+                </p>
+                <p className="text-orange-400 text-sm leading-none">
+                  Painel do Lojista
+                </p>
               </div>
             </div>
           </Link>
@@ -70,7 +75,10 @@ export default function LoginPage() {
           <h1 className="text-2xl font-black text-gray-900 mb-2">Entrar</h1>
           <p className="text-gray-500 text-sm mb-6">
             Não tem conta?{" "}
-            <Link href="/auth/register" className="text-orange-600 font-semibold hover:underline">
+            <Link
+              href="/auth/register"
+              className="text-orange-600 font-semibold hover:underline"
+            >
               Cadastre sua loja grátis
             </Link>
           </p>
@@ -83,7 +91,9 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Email
+              </label>
               <input
                 type="email"
                 required
@@ -95,7 +105,18 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-semibold text-gray-700">
+                  Senha
+                </label>
+                {/* Link esqueci minha senha */}
+                <Link
+                  href="/auth/esqueci-senha"
+                  className="text-xs text-orange-600 hover:underline font-semibold"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
               <input
                 type="password"
                 required

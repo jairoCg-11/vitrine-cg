@@ -31,9 +31,10 @@ python-multipart==0.0.22
 rsa==4.9.1
 six==1.17.0
 SQLAlchemy==2.0.48
-starlette==1.0.0
+starlette==0.46.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 urllib3==2.6.3
 uvicorn==0.42.0
 Pillow==10.3.0
+fastapi-mail==1.6.2
