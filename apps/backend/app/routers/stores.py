@@ -8,6 +8,7 @@ from app.models.user import User
 from app.routers.deps import get_current_user
 from app.schemas.product import ProductCreate, ProductResponse, ProductUpdate, ProductImageResponse
 from app.schemas.store import StoreCreate, StoreResponse, StoreUpdate
+from app.services.analytics import get_store_stats
 from app.services.product import (
     create_product,
     delete_product,
@@ -347,4 +348,23 @@ def remove_product_image_route(
  
     delete_image(image.image_url)
     delete_product_image(db, image)
+
+@router.get("/me/stats")
+def get_my_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_lojista),
+):
+    """
+    Retorna estatísticas da loja do lojista logado.
+    Visitas e cliques no WhatsApp nos últimos 7, 30 e 90 dias.
+    """
+    from app.services.analytics import get_store_stats
+ 
+    store = get_store_by_owner(db, current_user.id)
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Você ainda não tem uma loja cadastrada.",
+        )
+    return get_store_stats(db, store.id)
  

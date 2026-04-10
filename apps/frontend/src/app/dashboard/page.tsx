@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { vendored } from "next/dist/server/route-modules/app-page/module.compiled";
+import StoreStats from "@/components/store/StoreStats";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -263,7 +264,7 @@ export default function DashboardPage() {
                 </div>
               </Link>
             )}
-
+            <StoreStats />
             {/* ── Stats ────────────────────────────────────────────────────── */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="bg-white rounded-2xl shadow-md p-4 text-center">

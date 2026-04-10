@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -17,6 +17,7 @@ from app.services.public import (
     get_store_with_products,
     search,
 )
+from app.services.analytics import register_event
 
 router = APIRouter(prefix="/public", tags=["Público"])
 
@@ -28,14 +29,23 @@ def list_stores(db: Session = Depends(get_db)):
 
 
 @router.get("/stores/{store_id}", response_model=PublicStoreDetailResponse)
-def get_store(store_id: int, db: Session = Depends(get_db)):
-    """Retorna detalhes de uma loja com seus produtos disponíveis. Sem autenticação."""
+def get_store(
+    store_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Retorna detalhes de uma loja com seus produtos disponíveis.
+    Registra uma visita em background. Sem autenticação.
+    """
     store = get_store_with_products(db, store_id)
     if not store:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Loja não encontrada.",
         )
+    # Registra visita em background — não atrasa a resposta
+    background_tasks.add_task(register_event, db, store_id, "view")
     return store
 
 
@@ -63,15 +73,25 @@ def get_store_product(store_id: int, product_id: int, db: Session = Depends(get_
     return product
 
 
+@router.post("/stores/{store_id}/events/whatsapp", status_code=200)
+def track_whatsapp_click(
+    store_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Registra um clique no botão WhatsApp da loja.
+    Chamado pelo frontend ao clicar no botão. Sem autenticação.
+    """
+    background_tasks.add_task(register_event, db, store_id, "whatsapp_click")
+    return {"ok": True}
+
+
 @router.get("/search", response_model=SearchResponse)
 def search_stores_and_products(
     q: str = Query(..., min_length=2, description="Termo de busca"),
     db: Session = Depends(get_db),
 ):
-    """
-    Busca lojas e produtos pelo termo informado.
-    Pesquisa em nome, descrição e categoria/segmento.
-    Sem autenticação.
-    """
+    """Busca lojas e produtos pelo termo informado. Sem autenticação."""
     results = search(db, q)
     return results

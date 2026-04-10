@@ -1,6 +1,7 @@
 import { publicAPI, Product, StoreDetail } from "@/lib/api";
 import Header from "@/components/layout/Header";
 import ProductImageCarousel from "@/components/product/ProductImageCarousel";
+import WhatsAppButton from "@/components/store/WhatsAppButton";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -212,15 +213,12 @@ export default async function ProductPage({ params }: Props) {
 
               {/* CTA — desktop */}
               {whatsappUrl ? (
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <WhatsAppButton
+                  whatsappUrl={whatsappUrl}
+                  storeId={store.id}
+                  label="Tenho interesse — falar no WhatsApp"
                   className="hidden md:flex btn-whatsapp justify-center text-base py-4 rounded-2xl"
-                >
-                  <span>💬</span>
-                  <span>Tenho interesse — falar no WhatsApp</span>
-                </a>
+                />
               ) : (
                 <Link
                   href={`/lojas/${store.id}`}
@@ -244,15 +242,12 @@ export default async function ProductPage({ params }: Props) {
       {/* Botão WhatsApp fixo — mobile */}
       {whatsappUrl && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-gray-100 shadow-2xl">
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <WhatsAppButton
+            whatsappUrl={whatsappUrl}
+            storeId={store.id}
+            label="Tenho interesse — falar no WhatsApp"
             className="btn-whatsapp w-full justify-center text-base py-4 rounded-2xl"
-          >
-            <span>💬</span>
-            <span>Tenho interesse — falar no WhatsApp</span>
-          </a>
+          />
         </div>
       )}
 

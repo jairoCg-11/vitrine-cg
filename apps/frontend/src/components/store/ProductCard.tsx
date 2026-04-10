@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Product } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface Props {
   product: Product;
   whatsappUrl: string | null;
@@ -21,6 +23,7 @@ export default function ProductCard({ product, whatsappUrl, storeName, storeId }
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!whatsappUrl) return;
+    fetch(`${API_URL}/public/stores/${resolvedStoreId}/events/whatsapp`, { method: "POST" }).catch(() => {});
     const base = whatsappUrl.split("?text=")[0];
     const url = `${base}?text=Olá! Vi o produto "${product.name}" na loja ${storeName} no Vitrine CG e tenho interesse!`;
     window.open(url, "_blank");

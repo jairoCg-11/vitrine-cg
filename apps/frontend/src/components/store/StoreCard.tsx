@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Store } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface Props {
   store: Store;
   // Quando true, aplica borda e visual especial de destaque
@@ -17,6 +19,7 @@ export default function StoreCard({ store, featured = false }: Props) {
     e.preventDefault();
     e.stopPropagation();
     if (!store.whatsapp) return;
+    fetch(`${API_URL}/public/stores/${store.id}/events/whatsapp`, { method: "POST" }).catch(() => {});
     window.open(
       `https://wa.me/55${store.whatsapp.replace(/\D/g, "")}?text=Olá! Vi sua loja no Vitrine CG e tenho interesse!`,
       "_blank",

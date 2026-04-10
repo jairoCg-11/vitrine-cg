@@ -2,6 +2,7 @@ import { publicAPI, StoreDetail } from "@/lib/api";
 import Header from "@/components/layout/Header";
 import ProductCard from "@/components/store/ProductCard";
 import StoreEditButton from "@/components/store/StoreEditButton";
+import WhatsAppButton from "@/components/store/WhatsAppButton";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -140,15 +141,11 @@ export default async function StorePage({ params }: Props) {
                     </div>
                   </div>
                   {whatsappUrl && (
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <WhatsAppButton
+                      whatsappUrl={whatsappUrl}
+                      storeId={store.id}
                       className="hidden md:flex btn-whatsapp text-sm flex-shrink-0"
-                    >
-                      <span>💬</span>
-                      <span>Falar no WhatsApp</span>
-                    </a>
+                    />
                   )}
                 </div>
 
@@ -213,14 +210,12 @@ export default async function StorePage({ params }: Props) {
                 Esta loja está atualizando o catálogo.
               </p>
               {whatsappUrl && (
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <WhatsAppButton
+                  whatsappUrl={whatsappUrl}
+                  storeId={store.id}
+                  label="Perguntar disponibilidade pelo WhatsApp"
                   className="btn-whatsapp inline-flex text-sm"
-                >
-                  💬 Perguntar disponibilidade pelo WhatsApp
-                </a>
+                />
               )}
             </div>
           ) : (
@@ -242,15 +237,12 @@ export default async function StorePage({ params }: Props) {
       {/* ── Botão WhatsApp fixo — mobile ─────────────────────────────────── */}
       {whatsappUrl && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 p-3 bg-white border-t border-gray-100 shadow-2xl">
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <WhatsAppButton
+            whatsappUrl={whatsappUrl}
+            storeId={store.id}
+            label={`Falar com ${store.name} no WhatsApp`}
             className="btn-whatsapp w-full justify-center text-sm py-3.5 rounded-2xl"
-          >
-            <span>💬</span>
-            <span>Falar com {store.name} no WhatsApp</span>
-          </a>
+          />
         </div>
       )}
 
