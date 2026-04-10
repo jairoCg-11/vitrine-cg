@@ -51,6 +51,9 @@ services:
       MINIO_PUBLIC_URL: https://storage.vitrine-cg.inovautomatica.com
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      FRONTEND_URL: https://vitrine-cg.inovautomatica.com
     networks:
       - vitrine_network
       - security-links_security-network
