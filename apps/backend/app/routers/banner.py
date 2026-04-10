@@ -1,12 +1,14 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.banner import Banner as BannerModel
 from app.models.user import User
 from app.routers.deps import get_current_user
-from app.schemas.banner import BannerOrderUpdate, BannerResponse, BannerUpdate
+from app.schemas.banner import BannerResponse, BannerUpdate
 from app.services.banner import (
     create_banner,
     delete_banner,
@@ -24,13 +26,22 @@ MAX_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Dependência — garante que apenas admins acessem a rota."""
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso restrito a administradores.",
         )
     return current_user
+
+
+# ─── Schema de reordenação ────────────────────────────────────────────────────
+
+class BannerReorderItem(BaseModel):
+    id: int
+    order: int
+
+class BannerReorderRequest(BaseModel):
+    items: List[BannerReorderItem]
 
 
 # ─── Rotas públicas ───────────────────────────────────────────────────────────
@@ -66,17 +77,33 @@ async def create_new_banner(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Formato inválido. Use JPEG, PNG ou WebP.",
         )
-
     data = await file.read()
-
     if len(data) > MAX_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Imagem muito grande. Máximo 5MB.",
         )
-
     image_url = upload_image(data, file.content_type, "banners")
     return create_banner(db, image_url=image_url, title=title, link_url=link_url)
+
+
+@router.post("/admin/banners/reorder", status_code=200)
+def reorder_banners(
+    data: BannerReorderRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Reordena os banners em lote.
+    Recebe lista de {id, order} e atualiza todos de uma vez.
+    Apenas admin.
+    """
+    for item in data.items:
+        banner = db.query(BannerModel).filter(BannerModel.id == item.id).first()
+        if banner:
+            banner.order = item.order
+    db.commit()
+    return {"message": "Banners reordenados com sucesso."}
 
 
 @router.patch("/admin/banners/{banner_id}", response_model=BannerResponse)
@@ -109,6 +136,5 @@ def remove_banner(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Banner não encontrado.",
         )
-    # Remove imagem do MinIO
     delete_image(banner.image_url)
     delete_banner(db, banner)

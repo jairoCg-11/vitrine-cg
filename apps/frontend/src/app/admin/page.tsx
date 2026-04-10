@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
+import BannerList from "@/components/banner/BannerList";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -732,73 +733,16 @@ export default function AdminPage() {
                 </h2>
                 <p className="text-gray-500 text-sm mt-0.5">
                   {banners.length} {banners.length === 1 ? "banner" : "banners"}{" "}
-                  — exibidos em ordem crescente
+                  — arraste para reordenar
                 </p>
               </div>
-
-              {banners.length === 0 ? (
-                <div className="py-16 text-center text-gray-400">
-                  <p className="text-4xl mb-3">🖼️</p>
-                  <p>Nenhum banner cadastrado ainda.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-50">
-                  {banners.map((banner) => (
-                    <div
-                      key={banner.id}
-                      className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors"
-                    >
-                      {/* Preview */}
-                      <div className="relative w-24 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                        <Image
-                          src={banner.image_url}
-                          alt={banner.title ?? "Banner"}
-                          fill
-                          unoptimized
-                          className="object-cover"
-                        />
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm truncate">
-                          {banner.title || "Sem título"}
-                        </p>
-                        {banner.link_url && (
-                          <p className="text-gray-400 text-xs truncate mt-0.5">
-                            {banner.link_url}
-                          </p>
-                        )}
-                        <p className="text-gray-400 text-xs mt-0.5">
-                          Ordem: {banner.order} ·{" "}
-                          {formatDate(banner.created_at)}
-                        </p>
-                      </div>
-
-                      {/* Status + ações */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${banner.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
-                        >
-                          {banner.is_active ? "● Ativo" : "● Inativo"}
-                        </span>
-                        <button
-                          onClick={() => handleToggleBanner(banner)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
-                        >
-                          {banner.is_active ? "Pausar" : "Ativar"}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBanner(banner)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition-all"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <BannerList
+                banners={banners}
+                token={token}
+                onUpdate={setBanners}
+                onError={setError}
+                onSuccess={setSuccess}
+              />
             </div>
           </div>
         )}
