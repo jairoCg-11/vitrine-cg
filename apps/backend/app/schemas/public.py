@@ -3,6 +3,16 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 
+class PublicProductImageResponse(BaseModel):
+    """Imagem do produto visível para o consumidor."""
+    id: int
+    image_url: str
+    order: int
+
+    class Config:
+        from_attributes = True
+
+
 class PublicProductResponse(BaseModel):
     """Dados do produto visíveis para o consumidor."""
     id: int
@@ -14,6 +24,7 @@ class PublicProductResponse(BaseModel):
     sizes: Optional[str]
     image_url: Optional[str]
     is_available: bool
+    images: List[PublicProductImageResponse] = []
 
     class Config:
         from_attributes = True
@@ -32,7 +43,6 @@ class PublicStoreResponse(BaseModel):
     logo_url: Optional[str]
     cover_url: Optional[str]
     is_open: bool
-    # Exposto para o frontend filtrar lojas em destaque
     plan: str
 
     class Config:

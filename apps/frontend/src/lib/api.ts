@@ -31,6 +31,12 @@ export const publicAPI = {
 };
 
 // Tipos
+export interface ProductImage {
+  id: number;
+  image_url: string;
+  order: number;
+}
+
 export interface Store {
   id: number;
   owner_id: number;
@@ -56,6 +62,7 @@ export interface Product {
   sizes: string | null;
   image_url: string | null;
   is_available: boolean;
+  images: ProductImage[];
 }
 
 export interface StoreDetail extends Store {

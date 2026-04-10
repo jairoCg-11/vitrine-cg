@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.routers.deps import get_current_user
-from app.schemas.product import ProductCreate, ProductResponse, ProductUpdate
+from app.schemas.product import ProductCreate, ProductResponse, ProductUpdate, ProductImageResponse
 from app.schemas.store import StoreCreate, StoreResponse, StoreUpdate
 from app.services.product import (
     create_product,
@@ -14,6 +14,10 @@ from app.services.product import (
     get_product_by_id,
     get_products_by_store,
     update_product,
+    add_product_image,
+    delete_product_image,
+    get_product_image_by_id,
+    count_product_images,
 )
 from app.services.store import create_store, get_store_by_owner, update_store
 
@@ -277,3 +281,70 @@ async def upload_product_image(
 
     url = upload_image(data, file.content_type, "products")
     return update_product(db, product, ProductUpdate(image_url=url))
+@router.post(
+    "/me/products/{product_id}/images",
+    response_model=ProductImageResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_product_image_route(
+    product_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_lojista),
+):
+    """
+    Adiciona uma imagem ao produto. Máximo 3 imagens por produto.
+    A primeira imagem adicionada vira a imagem principal.
+    Apenas lojistas.
+    """
+    store = get_store_by_owner(db, current_user.id)
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
+ 
+    product = get_product_by_id(db, product_id, store.id)
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado.")
+ 
+    validate_image(file)
+    data = await file.read()
+ 
+    if len(data) > MAX_SIZE:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Imagem muito grande. Máximo 5MB.")
+ 
+    try:
+        url = upload_image(data, file.content_type, "products")
+        return add_product_image(db, product_id, url)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+ 
+ 
+@router.delete(
+    "/me/products/{product_id}/images/{image_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def remove_product_image_route(
+    product_id: int,
+    image_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_lojista),
+):
+    """
+    Remove uma imagem do produto.
+    Se for a principal, a próxima imagem assume o lugar.
+    Apenas lojistas.
+    """
+    store = get_store_by_owner(db, current_user.id)
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
+ 
+    product = get_product_by_id(db, product_id, store.id)
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado.")
+ 
+    image = get_product_image_by_id(db, image_id, product_id)
+    if not image:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Imagem não encontrada.")
+ 
+    delete_image(image.image_url)
+    delete_product_image(db, image)
+ 

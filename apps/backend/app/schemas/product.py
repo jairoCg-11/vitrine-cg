@@ -1,6 +1,16 @@
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
+
+
+class ProductImageResponse(BaseModel):
+    """Dados de uma imagem do produto."""
+    id: int
+    image_url: str
+    order: int
+
+    class Config:
+        from_attributes = True
 
 
 class ProductCreate(BaseModel):
@@ -9,7 +19,7 @@ class ProductCreate(BaseModel):
     description: Optional[str] = None
     price: Decimal
     category: Optional[str] = None
-    sizes: Optional[str] = None  # ex: "PP,P,M,G"
+    sizes: Optional[str] = None
 
 
 class ProductUpdate(BaseModel):
@@ -34,6 +44,7 @@ class ProductResponse(BaseModel):
     sizes: Optional[str]
     image_url: Optional[str]
     is_available: bool
+    images: List[ProductImageResponse] = []
 
     class Config:
         from_attributes = True

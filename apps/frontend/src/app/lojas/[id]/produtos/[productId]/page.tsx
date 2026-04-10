@@ -1,5 +1,6 @@
 import { publicAPI, Product, StoreDetail } from "@/lib/api";
 import Header from "@/components/layout/Header";
+import ProductImageCarousel from "@/components/product/ProductImageCarousel";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -35,7 +36,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     product.description,
     `Preço: ${price}`,
     `Vendido por ${store.name} no Vitrine CG.`,
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return {
     title: product.name,
@@ -43,7 +46,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${product.name} — ${store.name} | Vitrine CG`,
       description,
-      images: product.image_url ? [{ url: product.image_url, alt: product.name }] : [],
+      images: product.image_url
+        ? [{ url: product.image_url, alt: product.name }]
+        : [],
     },
   };
 }
@@ -59,6 +64,14 @@ export default async function ProductPage({ params }: Props) {
   const showSizes = product.category?.toLowerCase() === "roupas";
   const price = `R$ ${Number(product.price).toFixed(2).replace(".", ",")}`;
 
+  // Monta lista de imagens — usa images[] se tiver, senão usa image_url
+  const images =
+    product.images && product.images.length > 0
+      ? product.images.map((img) => img.image_url)
+      : product.image_url
+        ? [product.image_url]
+        : [];
+
   const whatsappUrl = store.whatsapp
     ? `https://wa.me/55${store.whatsapp.replace(/\D/g, "")}?text=Olá! Vi o produto "${product.name}" na loja ${store.name} no Vitrine CG e tenho interesse!`
     : null;
@@ -68,64 +81,51 @@ export default async function ProductPage({ params }: Props) {
       <Header />
 
       <div className="max-w-5xl mx-auto px-4 py-4 md:py-8">
-
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-4 overflow-x-auto whitespace-nowrap">
-          <Link href="/" className="hover:text-orange-600 transition-colors">Início</Link>
+          <Link href="/" className="hover:text-orange-600 transition-colors">
+            Início
+          </Link>
           <span>/</span>
-          <Link href="/lojas" className="hover:text-orange-600 transition-colors">Lojas</Link>
+          <Link
+            href="/lojas"
+            className="hover:text-orange-600 transition-colors"
+          >
+            Lojas
+          </Link>
           <span>/</span>
-          <Link href={`/lojas/${store.id}`} className="hover:text-orange-600 transition-colors truncate max-w-24">
+          <Link
+            href={`/lojas/${store.id}`}
+            className="hover:text-orange-600 transition-colors truncate max-w-24"
+          >
             {store.name}
           </Link>
           <span>/</span>
-          <span className="text-gray-600 font-medium truncate max-w-32">{product.name}</span>
+          <span className="text-gray-600 font-medium truncate max-w-32">
+            {product.name}
+          </span>
         </nav>
 
-        {/* Layout principal */}
         <div className="bg-white rounded-2xl shadow-md overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2">
-
-            {/* ── Imagem ──────────────────────────────────────────────────── */}
-            <div className="relative bg-gray-100" style={{ minHeight: "320px" }}>
-              {product.image_url ? (
-                <Image
-                  src={product.image_url}
-                  alt={product.name}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
-                  priority
-                />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-300">
-                  <span className="text-6xl mb-2">📦</span>
-                  <span className="text-sm">Sem foto</span>
-                </div>
-              )}
-
-              {/* Badge categoria */}
-              {product.category && (
-                <div className="absolute top-3 left-3">
-                  <span className="badge bg-white/90 text-gray-700 text-xs shadow-md capitalize">
-                    {product.category}
-                  </span>
-                </div>
-              )}
-            </div>
+            {/* ── Carrossel de imagens ─────────────────────────────────────── */}
+            <ProductImageCarousel images={images} productName={product.name} />
 
             {/* ── Informações ─────────────────────────────────────────────── */}
             <div className="p-5 md:p-8 flex flex-col gap-4">
+              {/* Badge categoria */}
+              {product.category && (
+                <span className="inline-block w-fit badge bg-orange-100 text-orange-700 text-xs capitalize">
+                  {product.category}
+                </span>
+              )}
 
               {/* Nome */}
-              <div>
-                <h1 className="text-xl md:text-2xl font-black text-gray-900 leading-tight">
-                  {product.name}
-                </h1>
-              </div>
+              <h1 className="text-xl md:text-2xl font-black text-gray-900 leading-tight">
+                {product.name}
+              </h1>
 
-              {/* Preço em destaque */}
+              {/* Preço */}
               <div className="bg-orange-50 rounded-2xl p-4">
                 <p className="text-xs text-gray-500 mb-1">Preço</p>
                 <p className="text-3xl md:text-4xl font-black text-orange-600">
@@ -177,10 +177,20 @@ export default async function ProductPage({ params }: Props) {
               {/* Vendido por */}
               <div className="border-t border-gray-100 pt-4">
                 <p className="text-xs text-gray-400 mb-2">Vendido por</p>
-                <Link href={`/lojas/${store.id}`} className="flex items-center gap-3 group">
+                <Link
+                  href={`/lojas/${store.id}`}
+                  className="flex items-center gap-3 group"
+                >
                   <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                     {store.logo_url ? (
-                      <Image src={store.logo_url} alt={store.name} width={40} height={40} unoptimized className="object-cover w-full h-full" />
+                      <Image
+                        src={store.logo_url}
+                        alt={store.name}
+                        width={40}
+                        height={40}
+                        unoptimized
+                        className="object-cover w-full h-full"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-orange-500 text-white font-black">
                         {store.name.charAt(0)}
@@ -192,7 +202,9 @@ export default async function ProductPage({ params }: Props) {
                       {store.name}
                     </p>
                     {store.location && (
-                      <p className="text-xs text-gray-400">📍 {store.location}</p>
+                      <p className="text-xs text-gray-400">
+                        📍 {store.location}
+                      </p>
                     )}
                   </div>
                 </Link>
@@ -210,12 +222,14 @@ export default async function ProductPage({ params }: Props) {
                   <span>Tenho interesse — falar no WhatsApp</span>
                 </a>
               ) : (
-                <Link href={`/lojas/${store.id}`} className="hidden md:block btn-primary text-center py-4 rounded-2xl">
+                <Link
+                  href={`/lojas/${store.id}`}
+                  className="hidden md:block btn-primary text-center py-4 rounded-2xl"
+                >
                   Ver loja completa
                 </Link>
               )}
 
-              {/* Ver mais produtos */}
               <Link
                 href={`/lojas/${store.id}`}
                 className="text-center text-sm text-orange-600 hover:underline font-semibold"
@@ -227,7 +241,7 @@ export default async function ProductPage({ params }: Props) {
         </div>
       </div>
 
-      {/* ── Botão WhatsApp fixo — mobile ─────────────────────────────────── */}
+      {/* Botão WhatsApp fixo — mobile */}
       {whatsappUrl && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-gray-100 shadow-2xl">
           <a
