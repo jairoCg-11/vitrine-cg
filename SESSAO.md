@@ -50,6 +50,10 @@ Repositório: https://github.com/jairoCg-11/vitrine-cg
 docker compose -f docker/development/docker-compose.dev.yml --env-file .env up -d
 cd apps/frontend && npm run dev
 
+# Down
+
+docker compose -f docker/development/docker-compose.dev.yml down
+
 ## Deploy
 
 git add . && git commit -m "tipo(escopo): descrição" && git push
@@ -63,9 +67,17 @@ git add . && git commit -m "tipo(escopo): descrição" && git push
 - Tamanhos como botões
 - Botão WhatsApp verde
 
+# Todas as tabelas estão corretas em produção:
+
+- users
+- stores
+- products
+- product_images
+- banners
+- store_events ← nova
+
 ## Pendentes
 
-- Reordenar banners por drag-and-drop
 - Sistema de avaliações de lojas
 - Integração de pagamento (Stripe/Asaas)
 - App mobile nativo

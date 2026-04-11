@@ -10,23 +10,22 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Dados pessoais
     name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     phone = Column(String(20), nullable=True)
     password_hash = Column(String(255), nullable=False)
 
-    # Perfil de acesso
     role = Column(
         Enum("admin", "lojista", "consumidor", name="user_role"),
         nullable=False,
         default="consumidor",
     )
 
-    # Status
     is_active = Column(Boolean, default=True, nullable=False)
 
-    # Datas
+    terms_accepted_at = Column(DateTime, nullable=True)
+    terms_ip = Column(String(45), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

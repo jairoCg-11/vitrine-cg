@@ -17,14 +17,10 @@ def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
 
 
 def toggle_block_user(db: Session, user_id: int) -> Optional[User]:
-    """
-    Bloqueia o usuário se estiver ativo, desbloqueia se estiver bloqueado.
-    Retorna None se o usuário não for encontrado.
-    """
+    """Bloqueia ou desbloqueia um usuário."""
     user = get_user_by_id(db, user_id)
     if not user:
         return None
-
     user.is_active = not user.is_active
     db.commit()
     db.refresh(user)
@@ -33,19 +29,19 @@ def toggle_block_user(db: Session, user_id: int) -> Optional[User]:
 
 def delete_user(db: Session, user_id: int) -> bool:
     """
-    Exclui um usuário pelo ID.
-    Retorna True se excluído, False se não encontrado.
+    Exclui um usuário e todos os seus dados dependentes via cascata do banco.
+    Usamos query.delete() para evitar que o ORM tente gerenciar objetos relacionados
+    na memória, o que causava erros de NotNullViolation.
     """
-    user = get_user_by_id(db, user_id)
-    if not user:
-        return False
+    try:
+        deleted_count = db.query(User).filter(User.id == user_id).delete(synchronize_session=False)
+        db.commit()
+        return deleted_count > 0
+    except Exception as e:
+        db.rollback()
+        print(f"Erro ao excluir usuário {user_id}: {e}")
+        raise e
 
-    db.delete(user)
-    db.commit()
-    return True
-
-
-# ─── Planos ───────────────────────────────────────────────────────────────────
 
 def get_store_by_id(db: Session, store_id: int) -> Optional[Store]:
     """Retorna uma loja pelo ID."""
@@ -53,14 +49,10 @@ def get_store_by_id(db: Session, store_id: int) -> Optional[Store]:
 
 
 def update_store_plan(db: Session, store_id: int, plan: str) -> Optional[Store]:
-    """
-    Altera o plano de uma loja.
-    Retorna a loja atualizada ou None se não encontrada.
-    """
+    """Altera o plano de uma loja."""
     store = get_store_by_id(db, store_id)
     if not store:
         return None
-
     store.plan = plan
     db.commit()
     db.refresh(store)

@@ -19,6 +19,8 @@ interface AdminUser {
   role: string;
   is_active: boolean;
   created_at: string;
+  terms_accepted_at: string | null;
+  terms_ip: string | null;
 }
 
 interface AdminStore {
@@ -513,6 +515,10 @@ export default function AdminPage() {
                     <th className="py-3 px-4 font-semibold text-gray-600 hidden md:table-cell">
                       Cadastro
                     </th>
+                    <th className="py-3 px-4 font-semibold text-gray-600 hidden lg:table-cell">
+                      Termos
+                    </th>
+
                     <th className="py-3 px-6 font-semibold text-gray-600 text-right">
                       Ações
                     </th>
@@ -591,6 +597,25 @@ export default function AdminPage() {
                           </td>
                           <td className="py-4 px-4 text-gray-500 hidden md:table-cell">
                             {formatDate(u.created_at)}
+                          </td>
+                          <td className="py-4 px-4 hidden lg:table-cell">
+                            {u.terms_accepted_at ? (
+                              <div>
+                                <span className="badge bg-green-100 text-green-700 text-xs">
+                                  ✅ Aceito
+                                </span>
+                                <p className="text-gray-400 text-xs mt-0.5">
+                                  {formatDate(u.terms_accepted_at)}
+                                </p>
+                                {u.terms_ip && (
+                                  <p className="text-gray-300 text-xs">
+                                    {u.terms_ip}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-300 text-xs">—</span>
+                            )}
                           </td>
                           <td className="py-4 px-6">
                             <div className="flex items-center justify-end gap-2">

@@ -1,7 +1,5 @@
 from datetime import datetime
-from typing import Optional
-from typing import Literal
-
+from typing import Optional, Literal
 from pydantic import BaseModel
 
 
@@ -15,6 +13,9 @@ class UserAdminResponse(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    # Registro de aceite dos termos
+    terms_accepted_at: Optional[datetime]
+    terms_ip: Optional[str]
 
     class Config:
         from_attributes = True
@@ -32,10 +33,6 @@ class BlockUserResponse(BaseModel):
         from_attributes = True
 
 
-# ─── Planos ───────────────────────────────────────────────────────────────────
-
-# Literal garante que apenas os valores válidos sejam aceitos.
-# Se o admin enviar "vip" por exemplo, o FastAPI rejeita com 422.
 PlanType = Literal["gratis", "basico", "premium"]
 
 

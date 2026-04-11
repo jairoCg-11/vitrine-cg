@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 
 from app.database import Base
 
@@ -11,8 +11,8 @@ class Product(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
-    store = relationship("Store", backref="products")
+    store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False)
+    store = relationship("Store", back_populates="products")
 
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)

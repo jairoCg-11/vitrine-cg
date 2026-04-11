@@ -1,8 +1,7 @@
+from datetime import datetime
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
-
-# --- Entrada ---
 
 class UserRegister(BaseModel):
     """Dados necessários para cadastrar um novo usuário."""
@@ -11,6 +10,8 @@ class UserRegister(BaseModel):
     password: str
     phone: Optional[str] = None
     role: str = "consumidor"
+    # Confirmação de aceite dos termos — obrigatório para lojistas
+    terms_accepted: bool = False
 
 
 class UserLogin(BaseModel):
@@ -35,8 +36,6 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
 
-
-# --- Saída ---
 
 class UserResponse(BaseModel):
     """Dados do usuário retornados pela API — nunca expõe a senha."""
