@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 
 from app.database import Base
 
@@ -11,10 +11,9 @@ class Store(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Relacionamento com o lojista — CASCADE: ao deletar o usuário, deleta a loja
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    owner = relationship("User", backref=backref("store", passive_deletes=True))
-    products = relationship("Product", back_populates="store", passive_deletes=True)
+    owner = relationship("User", backref="store", passive_deletes=True)
+    products = relationship("Product", back_populates="store", cascade="all, delete-orphan", passive_deletes=True)
 
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
@@ -33,8 +32,12 @@ class Store(Base):
         default="gratis",
     )
 
+    # Status
     is_active = Column(Boolean, default=True, nullable=False)
     is_open = Column(Boolean, default=True, nullable=False)
+
+    # Aprovação pelo admin — novas lojas ficam pendentes até o admin aprovar
+    is_approved = Column(Boolean, default=False, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

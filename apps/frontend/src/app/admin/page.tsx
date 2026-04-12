@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import BannerList from "@/components/banner/BannerList";
+import PendingStores from "@/components/admin/PendingStores";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -117,7 +118,7 @@ export default function AdminPage() {
   const router = useRouter();
 
   // Aba ativa: "usuarios" | "banners"
-  const [activeTab, setActiveTab] = useState<"usuarios" | "banners">(
+  const [activeTab, setActiveTab] = useState<"usuarios" | "banners" | "lojas">(
     "usuarios",
   );
 
@@ -482,8 +483,18 @@ export default function AdminPage() {
           >
             🖼️ Banners {banners.length > 0 && `(${banners.length})`}
           </button>
+          <button
+            onClick={() => setActiveTab("lojas")}
+            className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+              activeTab === "lojas"
+                ? "bg-shopping-dark text-white shadow-md"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            🏪 Lojas Pendentes
+          </button>
         </div>
-
+        {activeTab === "lojas" && <PendingStores />}
         {/* ── Aba: Usuários ──────────────────────────────────────────────────── */}
         {activeTab === "usuarios" && (
           <div className="bg-white rounded-2xl shadow-md">

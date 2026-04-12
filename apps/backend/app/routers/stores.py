@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -48,6 +48,29 @@ def create_my_store(
     """Cadastra a loja do lojista. Apenas lojistas. Cada lojista pode ter apenas uma loja."""
     try:
         return create_store(db, current_user.id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.post("", response_model=StoreResponse, status_code=status.HTTP_201_CREATED)
+async def create_my_store(
+    data: StoreCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_lojista),
+):
+    """Cadastra a loja do lojista. Apenas lojistas."""
+    from app.services.email import send_store_pending_email
+
+    try:
+        store = create_store(db, current_user.id, data)
+        # Envia email de confirmação em background
+        background_tasks.add_task(
+            send_store_pending_email,
+            email=current_user.email,
+            name=current_user.name,
+            store_name=store.name,
+        )
+        return store
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from app.services.admin import approve_store, get_pending_stores
+from app.services.email import send_store_approved_email
 
 from app.database import get_db
 from app.models.user import User
@@ -136,3 +138,72 @@ def change_store_plan(
         plan=store.plan,
         message=f"Plano da loja '{store.name}' atualizado para '{store.plan}'.",
     )
+
+
+# ─── Aprovação de lojas ──────────────────────────────────────────────────────
+
+@router.get("/stores/pending")
+def list_pending_stores(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Lista lojas aguardando aprovação. Apenas admin."""
+    from app.services.admin import get_pending_stores
+    stores = get_pending_stores(db)
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "segment": s.segment,
+            "owner_id": s.owner_id,
+            "is_approved": s.is_approved,
+            "created_at": s.created_at.isoformat(),
+        }
+        for s in stores
+    ]
+ 
+ 
+@router.patch("/stores/{store_id}/approve")
+async def toggle_store_approval(
+    store_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Aprova ou rejeita uma loja.
+    Se aprovada pela primeira vez, envia email de notificação ao lojista.
+    Apenas admin.
+    """
+    from app.services.admin import approve_store, get_store_by_id
+    from app.services.email import send_store_approved_email
+    from app.models.user import User as UserModel
+ 
+    store = get_store_by_id(db, store_id)
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Loja não encontrada.",
+        )
+ 
+    was_approved = store.is_approved
+    updated = approve_store(db, store_id, not store.is_approved)
+ 
+    # Envia email apenas quando aprova (não quando rejeita)
+    if not was_approved and updated.is_approved:
+        owner = db.query(UserModel).filter(UserModel.id == store.owner_id).first()
+        if owner:
+            try:
+                await send_store_approved_email(
+                    email=owner.email,
+                    name=owner.name,
+                    store_name=store.name,
+                )
+            except Exception as e:
+                print(f"❌ Erro ao enviar email de aprovação: {e}")
+ 
+    return {
+        "id": updated.id,
+        "name": updated.name,
+        "is_approved": updated.is_approved,
+        "message": f"Loja {'aprovada' if updated.is_approved else 'suspensa'} com sucesso.",
+    }

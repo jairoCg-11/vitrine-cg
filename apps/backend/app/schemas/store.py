@@ -40,6 +40,7 @@ class StoreResponse(BaseModel):
     plan: str
     is_active: bool
     is_open: bool
+    is_approved: bool
 
     class Config:
         from_attributes = True

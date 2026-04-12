@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { vendored } from "next/dist/server/route-modules/app-page/module.compiled";
 import StoreStats from "@/components/store/StoreStats";
+import PendingStoreBanner from "@/components/store/PendingStoreBanner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -23,6 +24,7 @@ interface Store {
   plan: string;
   is_active: boolean;
   is_open: boolean;
+  is_approved: boolean;
 }
 
 interface Product {
@@ -152,7 +154,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </header>
-
+      {store && !store.is_approved && (
+        <PendingStoreBanner storeName={store.name} />
+      )}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {!hasStore ? (
           /* Sem loja cadastrada */
