@@ -1,28 +1,33 @@
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
 from app.routers.deps import get_current_user
-from app.schemas.product import ProductCreate, ProductResponse, ProductUpdate, ProductImageResponse
+from app.schemas.product import ProductCreate, ProductImageResponse, ProductResponse, ProductUpdate
 from app.schemas.store import StoreCreate, StoreResponse, StoreUpdate
 from app.services.analytics import get_store_stats
+from app.services.plan import check_product_limit
 from app.services.product import (
+    add_product_image,
+    count_product_images,
     create_product,
     delete_product,
+    delete_product_image,
     get_product_by_id,
+    get_product_image_by_id,
     get_products_by_store,
     update_product,
-    add_product_image,
-    delete_product_image,
-    get_product_image_by_id,
-    count_product_images,
 )
+from app.services.storage import delete_image, upload_image
 from app.services.store import create_store, get_store_by_owner, update_store
 
 router = APIRouter(prefix="/stores", tags=["Lojista"])
+
+ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
+MAX_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 def require_lojista(current_user: User = Depends(get_current_user)) -> User:
@@ -35,21 +40,17 @@ def require_lojista(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
+def validate_image(file: UploadFile) -> None:
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Formato inválido. Use JPEG, PNG ou WebP.",
+        )
+
+
 # ==============================
 # ROTAS DA LOJA
 # ==============================
-
-@router.post("", response_model=StoreResponse, status_code=status.HTTP_201_CREATED)
-def create_my_store(
-    data: StoreCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_lojista),
-):
-    """Cadastra a loja do lojista. Apenas lojistas. Cada lojista pode ter apenas uma loja."""
-    try:
-        return create_store(db, current_user.id, data)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.post("", response_model=StoreResponse, status_code=status.HTTP_201_CREATED)
 async def create_my_store(
@@ -60,10 +61,8 @@ async def create_my_store(
 ):
     """Cadastra a loja do lojista. Apenas lojistas."""
     from app.services.email import send_store_pending_email
-
     try:
         store = create_store(db, current_user.id, data)
-        # Envia email de confirmação em background
         background_tasks.add_task(
             send_store_pending_email,
             email=current_user.email,
@@ -123,6 +122,17 @@ def create_my_product(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Você ainda não tem uma loja cadastrada.",
         )
+
+    # Verifica limite de produtos do plano
+    can_add, current_count, max_allowed = check_product_limit(db, store.id, store.plan)
+    if not can_add:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Limite de produtos atingido para o plano {store.plan}. "
+                   f"Você tem {current_count} de {max_allowed} produtos. "
+                   f"Faça upgrade do plano para adicionar mais.",
+        )
+
     return create_product(db, store.id, data)
 
 
@@ -190,22 +200,6 @@ def delete_my_product(
 # ROTAS DE UPLOAD DE IMAGENS
 # ==============================
 
-from fastapi import UploadFile, File
-from app.services.storage import upload_image, delete_image
-
-ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
-MAX_SIZE = 5 * 1024 * 1024  # 5MB
-
-
-def validate_image(file: UploadFile) -> None:
-    """Valida tipo e tamanho da imagem enviada."""
-    if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Formato inválido. Use JPEG, PNG ou WebP.",
-        )
-
-
 @router.post("/me/logo", response_model=StoreResponse)
 async def upload_logo(
     file: UploadFile = File(...),
@@ -215,24 +209,13 @@ async def upload_logo(
     """Faz upload da logo da loja. Apenas lojistas."""
     store = get_store_by_owner(db, current_user.id)
     if not store:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Você ainda não tem uma loja cadastrada.",
-        )
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
     validate_image(file)
     data = await file.read()
-
     if len(data) > MAX_SIZE:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Imagem muito grande. Máximo 5MB.",
-        )
-
-    # Remove logo antiga se existir
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Imagem muito grande. Máximo 5MB.")
     if store.logo_url:
         delete_image(store.logo_url)
-
     url = upload_image(data, file.content_type, "logos")
     return update_store(db, store, StoreUpdate(logo_url=url))
 
@@ -246,24 +229,13 @@ async def upload_cover(
     """Faz upload da foto de capa da loja. Apenas lojistas."""
     store = get_store_by_owner(db, current_user.id)
     if not store:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Você ainda não tem uma loja cadastrada.",
-        )
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
     validate_image(file)
     data = await file.read()
-
     if len(data) > MAX_SIZE:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Imagem muito grande. Máximo 5MB.",
-        )
-
-    # Remove capa antiga se existir
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Imagem muito grande. Máximo 5MB.")
     if store.cover_url:
         delete_image(store.cover_url)
-
     url = upload_image(data, file.content_type, "covers")
     return update_store(db, store, StoreUpdate(cover_url=url))
 
@@ -278,33 +250,20 @@ async def upload_product_image(
     """Faz upload da foto do produto. Apenas lojistas."""
     store = get_store_by_owner(db, current_user.id)
     if not store:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Você ainda não tem uma loja cadastrada.",
-        )
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
     product = get_product_by_id(db, product_id, store.id)
     if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Produto não encontrado.",
-        )
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado.")
     validate_image(file)
     data = await file.read()
-
     if len(data) > MAX_SIZE:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Imagem muito grande. Máximo 5MB.",
-        )
-
-    # Remove imagem antiga se existir
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Imagem muito grande. Máximo 5MB.")
     if product.image_url:
         delete_image(product.image_url)
-
     url = upload_image(data, file.content_type, "products")
     return update_product(db, product, ProductUpdate(image_url=url))
+
+
 @router.post(
     "/me/products/{product_id}/images",
     response_model=ProductImageResponse,
@@ -316,32 +275,24 @@ async def add_product_image_route(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_lojista),
 ):
-    """
-    Adiciona uma imagem ao produto. Máximo 3 imagens por produto.
-    A primeira imagem adicionada vira a imagem principal.
-    Apenas lojistas.
-    """
+    """Adiciona uma imagem ao produto. Máximo 3 imagens. Apenas lojistas."""
     store = get_store_by_owner(db, current_user.id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
- 
     product = get_product_by_id(db, product_id, store.id)
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado.")
- 
     validate_image(file)
     data = await file.read()
- 
     if len(data) > MAX_SIZE:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Imagem muito grande. Máximo 5MB.")
- 
     try:
         url = upload_image(data, file.content_type, "products")
         return add_product_image(db, product_id, url)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
- 
- 
+
+
 @router.delete(
     "/me/products/{product_id}/images/{image_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -352,37 +303,26 @@ def remove_product_image_route(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_lojista),
 ):
-    """
-    Remove uma imagem do produto.
-    Se for a principal, a próxima imagem assume o lugar.
-    Apenas lojistas.
-    """
+    """Remove uma imagem do produto. Apenas lojistas."""
     store = get_store_by_owner(db, current_user.id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
- 
     product = get_product_by_id(db, product_id, store.id)
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado.")
- 
     image = get_product_image_by_id(db, image_id, product_id)
     if not image:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Imagem não encontrada.")
- 
     delete_image(image.image_url)
     delete_product_image(db, image)
+
 
 @router.get("/me/stats")
 def get_my_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_lojista),
 ):
-    """
-    Retorna estatísticas da loja do lojista logado.
-    Visitas e cliques no WhatsApp nos últimos 7, 30 e 90 dias.
-    """
-    from app.services.analytics import get_store_stats
- 
+    """Retorna estatísticas da loja do lojista logado."""
     store = get_store_by_owner(db, current_user.id)
     if not store:
         raise HTTPException(
@@ -390,4 +330,3 @@ def get_my_stats(
             detail="Você ainda não tem uma loja cadastrada.",
         )
     return get_store_stats(db, store.id)
- 

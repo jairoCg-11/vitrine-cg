@@ -6,3 +6,4 @@ from app.models.product_image import ProductImage
 from app.models.banner import Banner
 from app.models.store_event import StoreEvent
 from app.models.password_reset_token import PasswordResetToken
+from app.models.plan_limit import PlanLimit

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.services.admin import approve_store, get_pending_stores
 from app.services.email import send_store_approved_email
+from app.services.plan import get_all_plan_limits, update_plan_limit
 
 from app.database import get_db
 from app.models.user import User
@@ -207,3 +208,83 @@ async def toggle_store_approval(
         "is_approved": updated.is_approved,
         "message": f"Loja {'aprovada' if updated.is_approved else 'suspensa'} com sucesso.",
     }
+
+
+# ─── Adicionar imports no topo de routers/admin.py ───────────────────────────
+# from app.services.plan import get_all_plan_limits, update_plan_limit
+
+# ─── Adicionar no final de routers/admin.py ───────────────────────────────────
+
+@router.get("/plan-limits")
+def list_plan_limits(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Lista os limites de produtos por plano. Apenas admin."""
+    from app.services.plan import get_all_plan_limits
+    limits = get_all_plan_limits(db)
+    return [
+        {
+            "plan": l.plan,
+            "max_products": l.max_products,
+            "label": "Ilimitado" if l.max_products == 0 else str(l.max_products),
+            "updated_at": l.updated_at.isoformat(),
+        }
+        for l in limits
+    ]
+
+
+@router.patch("/plan-limits/{plan}")
+def update_plan_limit_route(
+    plan: str,
+    max_products: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Atualiza o limite de produtos de um plano.
+    max_products=0 significa ilimitado.
+    Apenas admin.
+    """
+    from app.services.plan import update_plan_limit
+
+    if plan not in ["gratis", "basico", "premium"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Plano inválido. Use: gratis, basico ou premium.",
+        )
+
+    if max_products < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="O limite deve ser 0 (ilimitado) ou maior.",
+        )
+
+    updated = update_plan_limit(db, plan, max_products)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Plano não encontrado.",
+        )
+
+    return {
+        "plan": updated.plan,
+        "max_products": updated.max_products,
+        "label": "Ilimitado" if updated.max_products == 0 else str(updated.max_products),
+        "message": f"Limite do plano {plan} atualizado para {max_products if max_products > 0 else 'ilimitado'}.",
+    }
+
+
+# ─── Adicionar no routers/stores.py ──────────────────────────────────────────
+# No endpoint create_my_product, ANTES de chamar create_product, adiciona:
+
+# from app.services.plan import check_product_limit
+#
+# can_add, current, max_allowed = check_product_limit(db, store.id, store.plan)
+# if not can_add:
+#     raise HTTPException(
+#         status_code=status.HTTP_400_BAD_REQUEST,
+#         detail=f"Limite de produtos atingido para o plano {store.plan}. "
+#                f"Você tem {current} de {max_allowed} produtos. "
+#                f"Faça upgrade do plano para adicionar mais.",
+#     )

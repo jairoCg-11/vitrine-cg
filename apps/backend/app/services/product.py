@@ -23,7 +23,10 @@ def get_product_by_id(db: Session, product_id: int, store_id: int) -> Optional[P
 
 
 def create_product(db: Session, store_id: int, data: ProductCreate) -> Product:
-    """Cadastra um novo produto na loja."""
+    """
+    Cadastra um novo produto na loja.
+    A verificação de limite é feita no router antes de chamar esta função.
+    """
     product = Product(
         store_id=store_id,
         name=data.name,
@@ -74,23 +77,15 @@ def add_product_image(db: Session, product_id: int, image_url: str) -> ProductIm
     """
     Adiciona uma imagem ao produto.
     Lança ValueError se já tiver o máximo de imagens.
-    A primeira imagem adicionada também é definida como image_url principal.
     """
     count = count_product_images(db, product_id)
     if count >= MAX_IMAGES:
         raise ValueError(f"Máximo de {MAX_IMAGES} imagens por produto.")
 
-    # Define a ordem como próximo disponível
     order = count
-
-    image = ProductImage(
-        product_id=product_id,
-        image_url=image_url,
-        order=order,
-    )
+    image = ProductImage(product_id=product_id, image_url=image_url, order=order)
     db.add(image)
 
-    # Se for a primeira imagem, define como principal
     if order == 0:
         product = db.query(Product).filter(Product.id == product_id).first()
         if product:
@@ -102,17 +97,12 @@ def add_product_image(db: Session, product_id: int, image_url: str) -> ProductIm
 
 
 def delete_product_image(db: Session, image: ProductImage) -> None:
-    """
-    Remove uma imagem do produto.
-    Se for a imagem principal (order=0), promove a próxima.
-    """
+    """Remove uma imagem do produto e reordena as restantes."""
     product_id = image.product_id
-    was_first = image.order == 0
 
     db.delete(image)
     db.commit()
 
-    # Reordena as imagens restantes
     remaining = (
         db.query(ProductImage)
         .filter(ProductImage.product_id == product_id)
@@ -123,7 +113,6 @@ def delete_product_image(db: Session, image: ProductImage) -> None:
     for i, img in enumerate(remaining):
         img.order = i
 
-    # Atualiza image_url principal
     product = db.query(Product).filter(Product.id == product_id).first()
     if product:
         product.image_url = remaining[0].image_url if remaining else None
