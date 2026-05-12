@@ -58,7 +58,7 @@ docker compose -f docker/development/docker-compose.dev.yml down
 
 git add . && git commit -m "tipo(escopo): descrição" && git push
 
-# GitHub Actions cuida do resto automaticamente (~5 min)
+## GitHub Actions cuida do resto automaticamente (~5 min)
 
 - Thumbnails verticais à esquerda
 - Imagem principal à direita

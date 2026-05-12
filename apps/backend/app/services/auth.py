@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.user import User
+from app.models.password_reset_token import PasswordResetToken
 from app.schemas.auth import UserRegister
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -15,8 +16,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 RESET_TOKEN_EXPIRE_MINUTES = 60
-
-_reset_tokens: dict[str, tuple[int, datetime]] = {}
 
 
 def hash_password(password: str) -> str:
@@ -53,13 +52,11 @@ def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
 def register_user(db: Session, data: UserRegister, client_ip: Optional[str] = None) -> User:
     """
     Cadastra um novo usuário.
-    Se for lojista e terms_accepted=True, registra o aceite com IP e data/hora.
-    Lança ValueError se o email já estiver em uso ou se lojista não aceitou os termos.
+    Para lojistas: exige aceite dos termos e registra IP + data/hora.
     """
     if get_user_by_email(db, data.email):
         raise ValueError("Email já cadastrado.")
 
-    # Lojistas devem aceitar os termos obrigatoriamente
     if data.role == "lojista" and not data.terms_accepted:
         raise ValueError("Você deve aceitar os termos de uso para cadastrar sua loja.")
 
@@ -71,7 +68,6 @@ def register_user(db: Session, data: UserRegister, client_ip: Optional[str] = No
         role=data.role,
     )
 
-    # Registra o aceite dos termos
     if data.terms_accepted:
         user.terms_accepted_at = datetime.utcnow()
         user.terms_ip = client_ip
@@ -102,37 +98,74 @@ def change_password(db: Session, user: User, current_password: str, new_password
     db.commit()
 
 
-def create_reset_token(user_id: int) -> str:
-    now = datetime.utcnow()
-    expired = [t for t, (_, exp) in _reset_tokens.items() if exp < now]
-    for t in expired:
-        del _reset_tokens[t]
+# ─── Reset de senha — persistido no banco ─────────────────────────────────────
+
+def create_reset_token(db: Session, user_id: int) -> str:
+    """
+    Gera um token de reset e salva no banco com expiração de 1 hora.
+    Invalida tokens anteriores do mesmo usuário.
+    """
+    # Invalida tokens anteriores não usados
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user_id,
+        PasswordResetToken.used == False,
+    ).delete(synchronize_session=False)
+
     token = secrets.token_urlsafe(32)
-    expiry = now + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
-    _reset_tokens[token] = (user_id, expiry)
+    expires_at = datetime.utcnow() + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
+
+    reset = PasswordResetToken(
+        user_id=user_id,
+        token=token,
+        expires_at=expires_at,
+    )
+    db.add(reset)
+    db.commit()
     return token
 
 
-def validate_reset_token(token: str) -> Optional[int]:
-    entry = _reset_tokens.get(token)
-    if not entry:
+def validate_reset_token(db: Session, token: str) -> Optional[int]:
+    """
+    Valida o token de reset.
+    Retorna o user_id se válido, None se inválido ou expirado.
+    """
+    reset = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token == token,
+        PasswordResetToken.used == False,
+    ).first()
+
+    if not reset:
         return None
-    user_id, expiry = entry
-    if datetime.utcnow() > expiry:
-        del _reset_tokens[token]
+
+    if datetime.utcnow() > reset.expires_at:
         return None
-    return user_id
+
+    return reset.user_id
 
 
 def reset_password(db: Session, token: str, new_password: str) -> None:
-    user_id = validate_reset_token(token)
-    if not user_id:
+    """
+    Redefine a senha usando o token de reset.
+    Marca o token como usado após a operação.
+    """
+    reset = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token == token,
+        PasswordResetToken.used == False,
+    ).first()
+
+    if not reset:
         raise ValueError("Link inválido ou expirado. Solicite um novo.")
+
+    if datetime.utcnow() > reset.expires_at:
+        raise ValueError("Link expirado. Solicite um novo.")
+
     if len(new_password) < 6:
         raise ValueError("A nova senha deve ter pelo menos 6 caracteres.")
-    user = get_user_by_id(db, user_id)
+
+    user = get_user_by_id(db, reset.user_id)
     if not user:
         raise ValueError("Usuário não encontrado.")
+
     user.password_hash = hash_password(new_password)
+    reset.used = True  # Token de uso único
     db.commit()
-    del _reset_tokens[token]

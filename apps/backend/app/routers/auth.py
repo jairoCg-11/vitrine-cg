@@ -20,18 +20,12 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(data: UserRegister, request: Request, db: Session = Depends(get_db)):
-    """
-    Cadastra um novo usuário.
-    Para lojistas: exige aceite dos termos e registra IP + data/hora.
-    """
-    # Captura o IP real — considera proxy/load balancer
+    """Cadastra um novo usuário. Para lojistas: exige aceite dos termos e registra IP."""
     client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else None)
     if client_ip and "," in client_ip:
         client_ip = client_ip.split(",")[0].strip()
-
     try:
-        user = register_user(db, data, client_ip=client_ip)
-        return user
+        return register_user(db, data, client_ip=client_ip)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -78,7 +72,8 @@ async def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get
     """Solicita redefinição de senha via email."""
     user = get_user_by_email(db, data.email)
     if user and user.is_active:
-        token = create_reset_token(user.id)
+        # Token agora salvo no banco — sobrevive a reinicializações
+        token = create_reset_token(db, user.id)
         try:
             await send_reset_password_email(email=user.email, name=user.name, token=token)
             print(f"✅ Email enviado para {user.email}")
