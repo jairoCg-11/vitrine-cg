@@ -76,6 +76,13 @@ git add . && git commit -m "tipo(escopo): descrição" && git push
 - banners
 - store_events ← nova
 
+✅ Backup automático do banco no MinIO (3h30 diário, 30 dias retenção)
+✅ UptimeRobot para monitoramento
+✅ Tokens de reset de senha persistidos no banco
+✅ .env consolidado em único lugar na VPS
+✅ Redesign da home com animações e novas fontes
+✅ StoreCard redesenhado
+
 ## Pendentes
 
 - Sistema de avaliações de lojas
