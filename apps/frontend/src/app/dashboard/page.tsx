@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { vendored } from "next/dist/server/route-modules/app-page/module.compiled";
 import StoreStats from "@/components/store/StoreStats";
+import PlanUsageBar from "@/components/store/PlanUsageBar";
 import PendingStoreBanner from "@/components/store/PendingStoreBanner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -291,6 +292,15 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {store && (
+              <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-black text-gray-900">📦 Uso do plano</h2>
+                  <span className="badge bg-blue-100 text-blue-700 text-xs capitalize">{store.plan}</span>
+                </div>
+                <PlanUsageBar currentProducts={products.length} plan={store.plan as "gratis" | "basico" | "premium"} />
+              </div>
+            )}
             {/* ── Produtos ─────────────────────────────────────────────────── */}
             <div className="bg-white rounded-2xl shadow-md p-4 md:p-6">
               <div className="flex items-center justify-between mb-4">

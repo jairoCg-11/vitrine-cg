@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import BannerList from "@/components/banner/BannerList";
 import PendingStores from "@/components/admin/PendingStores";
-
+import PlanLimitsAdmin from "@/components/admin/PlanLimitsAdmin";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -118,9 +118,9 @@ export default function AdminPage() {
   const router = useRouter();
 
   // Aba ativa: "usuarios" | "banners"
-  const [activeTab, setActiveTab] = useState<"usuarios" | "banners" | "lojas">(
-    "usuarios",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "usuarios" | "banners" | "lojas" | "config"
+  >("usuarios");
 
   // ── Estado: usuários ──
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -493,6 +493,16 @@ export default function AdminPage() {
           >
             🏪 Lojas Pendentes
           </button>
+          <button
+            onClick={() => setActiveTab("config")}
+            className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+              activeTab === "config"
+                ? "bg-shopping-dark text-white shadow-md"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            ⚙️ Configurações
+          </button>
         </div>
         {activeTab === "lojas" && <PendingStores />}
         {/* ── Aba: Usuários ──────────────────────────────────────────────────── */}
@@ -782,6 +792,7 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+        {activeTab === "config" && <PlanLimitsAdmin />}
       </div>
     </div>
   );

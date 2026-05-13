@@ -95,3 +95,17 @@ def search_stores_and_products(
     """Busca lojas e produtos pelo termo informado. Sem autenticação."""
     results = search(db, q)
     return results
+
+@router.get("/plan-limits")
+def get_plan_limits_public(db: Session = Depends(get_db)):
+    """Retorna os limites de produtos por plano. Sem autenticação."""
+    from app.services.plan import get_all_plan_limits
+    limits = get_all_plan_limits(db)
+    return [
+        {
+            "plan": l.plan,
+            "max_products": l.max_products,
+            "label": "Ilimitado" if l.max_products == 0 else str(l.max_products),
+        }
+        for l in limits
+    ]
