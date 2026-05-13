@@ -83,6 +83,14 @@ git add . && git commit -m "tipo(escopo): descrição" && git push
 ✅ Redesign da home com animações e novas fontes
 ✅ StoreCard redesenhado
 
+✅ Backup automático do banco no MinIO
+✅ UptimeRobot configurado
+✅ Tokens de reset persistidos no banco
+✅ .env consolidado na VPS
+✅ Limite de produtos por plano configurável pelo admin
+✅ Barra de uso no dashboard do lojista
+✅ Configuração de limites no painel admin
+
 ## Pendentes
 
 - Sistema de avaliações de lojas

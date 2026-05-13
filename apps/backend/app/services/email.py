@@ -186,3 +186,74 @@ async def send_store_pending_email(email: str, name: str, store_name: str) -> No
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
+# ─── Adicionar no final de apps/backend/app/services/email.py ────────────────
+
+async def send_new_store_notification(
+    store_name: str,
+    owner_name: str,
+    owner_email: str,
+) -> None:
+    """
+    Envia email ao admin notificando sobre nova loja cadastrada.
+    """
+    if not settings.admin_email:
+        print("[Email] ADMIN_EMAIL não configurado — notificação não enviada.")
+        return
+
+    approve_url = f"{settings.frontend_url}/admin"
+
+    html = f"""
+    <div style="font-family: Inter, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; background: #f97316; color: white; width: 48px; height: 48px;
+                    border-radius: 12px; line-height: 48px; font-size: 24px; font-weight: 900;">V</div>
+        <h2 style="color: #1a1a2e; margin: 8px 0 0;">Vitrine CG — Admin</h2>
+      </div>
+
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+        <p style="font-size: 28px; margin: 0; text-align: center;">🏪</p>
+        <p style="color: #1d4ed8; font-weight: 700; font-size: 16px; margin: 8px 0 0; text-align: center;">
+          Nova loja aguardando aprovação
+        </p>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 0; color: #6b7280; font-size: 13px; width: 40%;">Loja</td>
+          <td style="padding: 10px 0; color: #111827; font-weight: 600; font-size: 13px;">{store_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">Lojista</td>
+          <td style="padding: 10px 0; color: #111827; font-weight: 600; font-size: 13px;">{owner_name}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">Email</td>
+          <td style="padding: 10px 0; color: #111827; font-weight: 600; font-size: 13px;">{owner_email}</td>
+        </tr>
+      </table>
+
+      <a href="{approve_url}"
+         style="display: block; background: #f97316; color: white; text-align: center;
+                padding: 14px 24px; border-radius: 12px; font-weight: 700; font-size: 16px;
+                text-decoration: none; margin-bottom: 24px;">
+        Ir para o painel admin →
+      </a>
+
+      <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 24px 0;" />
+      <p style="color: #d1d5db; font-size: 12px; text-align: center;">
+        Vitrine CG — Notificação automática do sistema
+      </p>
+    </div>
+    """
+
+    message = MessageSchema(
+        subject=f"🏪 Nova loja: {store_name} — aguardando aprovação",
+        recipients=[settings.admin_email],
+        body=html,
+        subtype=MessageType.html,
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message)
+    print(f"✅ Notificação enviada para admin: {settings.admin_email}")

@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     # URL do frontend — usada nos links dos emails
     frontend_url: str = "http://localhost:3000"
 
+    # Notificações do admin
+    admin_email: str = "jairomarques20@gmail.com"
+    admin_whatsapp: str = ""  # Ex: 5583999999999
+
+    # WhatsApp Business API — desativado por padrão
+    whatsapp_enabled: bool = False
+    whatsapp_api_url: str = ""
+
     @property
     def database_url(self) -> str:
         return (

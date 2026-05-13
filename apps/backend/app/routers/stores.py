@@ -23,7 +23,7 @@ from app.services.product import (
 )
 from app.services.storage import delete_image, upload_image
 from app.services.store import create_store, get_store_by_owner, update_store
-
+from app.services.email import send_store_pending_email, send_new_store_notification
 router = APIRouter(prefix="/stores", tags=["Lojista"])
 
 ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
@@ -68,6 +68,12 @@ async def create_my_store(
             email=current_user.email,
             name=current_user.name,
             store_name=store.name,
+        )
+        background_tasks.add_task(
+            send_new_store_notification,
+            store_name=store.name,
+            owner_name=current_user.name,
+            owner_email=current_user.email,
         )
         return store
     except ValueError as e:
