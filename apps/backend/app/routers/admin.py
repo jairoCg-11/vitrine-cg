@@ -8,6 +8,10 @@ from app.services.plan import get_all_plan_limits, update_plan_limit
 from app.database import get_db
 from app.models.user import User
 from app.routers.deps import get_current_user
+
+from app.models.product import Product
+from app.models.product_image import ProductImage
+from app.services.storage import delete_image
 from app.schemas.admin import (
     BlockUserResponse,
     StorePlanResponse,
@@ -288,3 +292,123 @@ def update_plan_limit_route(
 #                f"Você tem {current} de {max_allowed} produtos. "
 #                f"Faça upgrade do plano para adicionar mais.",
 #     )
+
+
+
+
+# ─── Adicionar no final de routers/admin.py ───────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════
+# MODERAÇÃO DE CONTEÚDO
+# ═══════════════════════════════════════════════════════════════
+
+@router.delete("/stores/{store_id}/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+def moderate_delete_product(
+    store_id: int,
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Admin exclui um produto de qualquer loja.
+    Remove também as imagens do MinIO.
+    """
+    from app.models.product import Product
+    from app.models.product_image import ProductImage
+    from app.services.storage import delete_image
+
+    product = db.query(Product).filter(
+        Product.id == product_id,
+        Product.store_id == store_id,
+    ).first()
+
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Produto não encontrado.",
+        )
+
+    # Remove imagens do MinIO
+    if product.image_url:
+        delete_image(product.image_url)
+
+    images = db.query(ProductImage).filter(ProductImage.product_id == product_id).all()
+    for img in images:
+        delete_image(img.image_url)
+
+    db.delete(product)
+    db.commit()
+
+
+@router.delete("/stores/{store_id}/cover", status_code=status.HTTP_200_OK)
+def moderate_delete_cover(
+    store_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Admin remove a foto de capa de uma loja."""
+    from app.models.store import Store
+    from app.services.storage import delete_image
+
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
+
+    if not store.cover_url:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Loja não tem foto de capa.")
+
+    delete_image(store.cover_url)
+    store.cover_url = None
+    db.commit()
+    return {"message": "Foto de capa removida com sucesso."}
+
+
+@router.delete("/stores/{store_id}/logo", status_code=status.HTTP_200_OK)
+def moderate_delete_logo(
+    store_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Admin remove o logo de uma loja."""
+    from app.models.store import Store
+    from app.services.storage import delete_image
+
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
+
+    if not store.logo_url:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Loja não tem logo.")
+
+    delete_image(store.logo_url)
+    store.logo_url = None
+    db.commit()
+    return {"message": "Logo removido com sucesso."}
+
+
+@router.get("/stores/{store_id}/products")
+def moderate_list_products(
+    store_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Lista produtos de qualquer loja para moderação. Apenas admin."""
+    from app.models.product import Product
+    from app.models.store import Store
+
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loja não encontrada.")
+
+    products = db.query(Product).filter(Product.store_id == store_id).all()
+    return [
+        {
+            "id": p.id,
+            "name": p.name,
+            "price": str(p.price),
+            "category": p.category,
+            "image_url": p.image_url,
+            "is_available": p.is_available,
+        }
+        for p in products
+    ]

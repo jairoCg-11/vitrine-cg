@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-
+import AdminModerationPanel from "@/components/admin/AdminModerationPanel";
 async function getStore(id: number): Promise<StoreDetail | null> {
   try {
     return await publicAPI.getStore(id);
@@ -248,6 +248,13 @@ export default async function StorePage({ params }: Props) {
 
       {/* ── Botão flutuante de edição — só para o dono da loja ──────────── */}
       <StoreEditButton storeId={store.id} ownerId={store.owner_id} />
+
+      <AdminModerationPanel
+        storeId={store.id}
+        storeName={store.name}
+        hasCover={!!store.cover_url}
+        hasLogo={!!store.logo_url}
+      />
 
       <footer className="bg-gray-900 text-white/60 py-6 px-4 text-center text-xs">
         <p>© 2026 Vitrine CG — Shopping Virtual Popular de Campina Grande</p>
