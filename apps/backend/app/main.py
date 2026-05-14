@@ -1,13 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
+from app.limiter import limiter
 from app.routers import auth, admin, stores, public, banner
 
 app = FastAPI(
     title="Vitrine CG API",
-    description="API do shopping virtual popular de Campina Grande",
-    version="0.1.0",
+    description="API do Shopping Virtual Popular de Campina Grande",
+    version="1.0.0",
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,7 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(stores.router)
@@ -25,11 +32,6 @@ app.include_router(public.router)
 app.include_router(banner.router)
 
 
-@app.get("/health", tags=["Sistema"])
-def health_check():
-    """Verifica se a API está no ar."""
-    return {
-        "status": "ok",
-        "service": "vitrine-cg-api",
-        "version": "0.1.0",
-    }
+@app.get("/health")
+def health():
+    return {"status": "ok"}

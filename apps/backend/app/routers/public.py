@@ -1,9 +1,10 @@
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.main import limiter
 from app.schemas.public import (
     PublicStoreDetailResponse,
     PublicStoreResponse,
@@ -18,40 +19,41 @@ from app.services.public import (
     search,
 )
 from app.services.analytics import register_event
+from app.services.plan import get_all_plan_limits
 
 router = APIRouter(prefix="/public", tags=["Público"])
 
 
 @router.get("/stores", response_model=List[PublicStoreResponse])
-def list_stores(db: Session = Depends(get_db)):
-    """Lista todas as lojas ativas do shopping. Sem autenticação."""
+@limiter.limit("120/minute")
+def list_stores(request: Request, db: Session = Depends(get_db)):
+    """Lista todas as lojas ativas e aprovadas. Limite: 120/minuto por IP."""
     return get_active_stores(db)
 
 
 @router.get("/stores/{store_id}", response_model=PublicStoreDetailResponse)
+@limiter.limit("120/minute")
 def get_store(
+    request: Request,
     store_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    """
-    Retorna detalhes de uma loja com seus produtos disponíveis.
-    Registra uma visita em background. Sem autenticação.
-    """
+    """Retorna detalhes de uma loja com seus produtos. Limite: 120/minuto por IP."""
     store = get_store_with_products(db, store_id)
     if not store:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Loja não encontrada.",
         )
-    # Registra visita em background — não atrasa a resposta
     background_tasks.add_task(register_event, db, store_id, "view")
     return store
 
 
 @router.get("/stores/{store_id}/products", response_model=List[PublicProductResponse])
-def list_store_products(store_id: int, db: Session = Depends(get_db)):
-    """Lista produtos disponíveis de uma loja. Sem autenticação."""
+@limiter.limit("120/minute")
+def list_store_products(request: Request, store_id: int, db: Session = Depends(get_db)):
+    """Lista produtos disponíveis de uma loja. Limite: 120/minuto por IP."""
     products = get_products_by_store_public(db, store_id)
     if not products:
         raise HTTPException(
@@ -62,8 +64,9 @@ def list_store_products(store_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/stores/{store_id}/products/{product_id}", response_model=PublicProductResponse)
-def get_store_product(store_id: int, product_id: int, db: Session = Depends(get_db)):
-    """Retorna um produto específico de uma loja. Sem autenticação."""
+@limiter.limit("120/minute")
+def get_store_product(request: Request, store_id: int, product_id: int, db: Session = Depends(get_db)):
+    """Retorna um produto específico de uma loja. Limite: 120/minuto por IP."""
     product = get_product_public(db, store_id, product_id)
     if not product:
         raise HTTPException(
@@ -74,32 +77,34 @@ def get_store_product(store_id: int, product_id: int, db: Session = Depends(get_
 
 
 @router.post("/stores/{store_id}/events/whatsapp", status_code=200)
+@limiter.limit("30/minute")
 def track_whatsapp_click(
+    request: Request,
     store_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    """
-    Registra um clique no botão WhatsApp da loja.
-    Chamado pelo frontend ao clicar no botão. Sem autenticação.
-    """
+    """Registra clique no WhatsApp. Limite: 30/minuto por IP."""
     background_tasks.add_task(register_event, db, store_id, "whatsapp_click")
     return {"ok": True}
 
 
 @router.get("/search", response_model=SearchResponse)
+@limiter.limit("30/minute")
 def search_stores_and_products(
-    q: str = Query(..., min_length=2, description="Termo de busca"),
+    request: Request,
+    q: str = Query(..., min_length=2),
     db: Session = Depends(get_db),
 ):
-    """Busca lojas e produtos pelo termo informado. Sem autenticação."""
+    """Busca lojas e produtos. Limite: 30/minuto por IP."""
     results = search(db, q)
     return results
 
+
 @router.get("/plan-limits")
-def get_plan_limits_public(db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def get_plan_limits_public(request: Request, db: Session = Depends(get_db)):
     """Retorna os limites de produtos por plano. Sem autenticação."""
-    from app.services.plan import get_all_plan_limits
     limits = get_all_plan_limits(db)
     return [
         {

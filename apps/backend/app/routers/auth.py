@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.main import limiter
 from app.models.user import User
 from app.routers.deps import get_current_user
 from app.schemas.auth import (
@@ -19,8 +20,12 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(data: UserRegister, request: Request, db: Session = Depends(get_db)):
-    """Cadastra um novo usuário. Para lojistas: exige aceite dos termos e registra IP."""
+@limiter.limit("5/hour")
+def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
+    """
+    Cadastra um novo usuário.
+    Limite: 5 cadastros por hora por IP.
+    """
     client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else None)
     if client_ip and "," in client_ip:
         client_ip = client_ip.split(",")[0].strip()
@@ -31,8 +36,12 @@ def register(data: UserRegister, request: Request, db: Session = Depends(get_db)
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(data: UserLogin, db: Session = Depends(get_db)):
-    """Realiza login e retorna token JWT válido por 7 dias."""
+@limiter.limit("10/minute")
+def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
+    """
+    Realiza login e retorna token JWT válido por 7 dias.
+    Limite: 10 tentativas por minuto por IP — proteção contra brute force.
+    """
     user = authenticate_user(db, data.email, data.password)
     if not user:
         raise HTTPException(
@@ -68,11 +77,14 @@ def change_my_password(
 
 
 @router.post("/forgot-password", response_model=MessageResponse)
-async def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    """Solicita redefinição de senha via email."""
+@limiter.limit("3/hour")
+async def forgot_password(request: Request, data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Solicita redefinição de senha via email.
+    Limite: 3 solicitações por hora por IP — evita spam de email.
+    """
     user = get_user_by_email(db, data.email)
     if user and user.is_active:
-        # Token agora salvo no banco — sobrevive a reinicializações
         token = create_reset_token(db, user.id)
         try:
             await send_reset_password_email(email=user.email, name=user.name, token=token)
@@ -83,8 +95,12 @@ async def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get
 
 
 @router.post("/reset-password", response_model=MessageResponse)
-def reset_my_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
-    """Redefine a senha usando o token recebido por email."""
+@limiter.limit("5/hour")
+def reset_my_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Redefine a senha usando o token recebido por email.
+    Limite: 5 tentativas por hora por IP.
+    """
     try:
         reset_password(db, data.token, data.new_password)
         return MessageResponse(message="Senha redefinida com sucesso! Faça login com a nova senha.")
