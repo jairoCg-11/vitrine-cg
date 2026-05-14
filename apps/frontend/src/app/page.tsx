@@ -209,7 +209,14 @@ export default async function HomePage() {
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <footer className="bg-gray-900 text-white/40 py-8 px-4 text-center text-sm">
         <p>© 2026 Vitrine CG — Shopping Virtual Popular de Campina Grande</p>
-        <p className="mt-1 text-xs">Feito com ❤️ para os lojistas de CG</p>
+        <div className="flex justify-center gap-4 mt-2 text-xs">
+          <Link href="/termos" className="hover:text-white transition-colors">
+            Termos de uso
+          </Link>
+          <Link href="/contato" className="hover:text-white transition-colors">
+            Contato e suporte
+          </Link>
+        </div>
       </footer>
     </div>
   );
