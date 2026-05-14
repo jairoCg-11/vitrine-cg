@@ -412,3 +412,85 @@ def moderate_list_products(
         }
         for p in products
     ]
+
+# ─── Adicionar no final de routers/admin.py ───────────────────────────────────
+
+@router.get("/analytics")
+def get_global_analytics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Retorna métricas globais da plataforma.
+    - online: visitas nos últimos 5 minutos
+    - today: visitas de hoje
+    - total: total de visitas registradas
+    - whatsapp_today: cliques no WhatsApp hoje
+    - whatsapp_total: total de cliques no WhatsApp
+    Apenas admin.
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    from app.models.store_event import StoreEvent
+
+    now = datetime.utcnow()
+    five_minutes_ago = now - timedelta(minutes=5)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Visitantes online — últimos 5 minutos
+    online = db.query(func.count(StoreEvent.id)).filter(
+        StoreEvent.event_type == "view",
+        StoreEvent.created_at >= five_minutes_ago,
+    ).scalar() or 0
+
+    # Visitas hoje
+    today_views = db.query(func.count(StoreEvent.id)).filter(
+        StoreEvent.event_type == "view",
+        StoreEvent.created_at >= today_start,
+    ).scalar() or 0
+
+    # Total de visitas
+    total_views = db.query(func.count(StoreEvent.id)).filter(
+        StoreEvent.event_type == "view",
+    ).scalar() or 0
+
+    # Cliques WhatsApp hoje
+    whatsapp_today = db.query(func.count(StoreEvent.id)).filter(
+        StoreEvent.event_type == "whatsapp_click",
+        StoreEvent.created_at >= today_start,
+    ).scalar() or 0
+
+    # Total cliques WhatsApp
+    whatsapp_total = db.query(func.count(StoreEvent.id)).filter(
+        StoreEvent.event_type == "whatsapp_click",
+    ).scalar() or 0
+
+    # Loja mais visitada hoje
+    top_store = db.query(
+        StoreEvent.store_id,
+        func.count(StoreEvent.id).label("count")
+    ).filter(
+        StoreEvent.event_type == "view",
+        StoreEvent.created_at >= today_start,
+    ).group_by(StoreEvent.store_id).order_by(func.count(StoreEvent.id).desc()).first()
+
+    top_store_info = None
+    if top_store:
+        from app.models.store import Store
+        store = db.query(Store).filter(Store.id == top_store.store_id).first()
+        if store:
+            top_store_info = {
+                "id": store.id,
+                "name": store.name,
+                "visits": top_store.count,
+            }
+
+    return {
+        "online": online,
+        "today_views": today_views,
+        "total_views": total_views,
+        "whatsapp_today": whatsapp_today,
+        "whatsapp_total": whatsapp_total,
+        "top_store_today": top_store_info,
+        "updated_at": now.isoformat(),
+    }

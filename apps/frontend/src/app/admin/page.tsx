@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import BannerList from "@/components/banner/BannerList";
 import PendingStores from "@/components/admin/PendingStores";
 import PlanLimitsAdmin from "@/components/admin/PlanLimitsAdmin";
+import GlobalAnalytics from "@/components/admin/GlobalAnalytics";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -448,7 +449,7 @@ export default function AdminPage() {
             <p className="text-white/80 text-sm mt-1">⭐ Premium</p>
           </div>
         </div>
-
+        <GlobalAnalytics />
         {/* ── Feedback ───────────────────────────────────────────────────────── */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-6 text-sm">
