@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Product } from "@/lib/api";
+import PriceDisplay from "@/components/product/PriceDisplay";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -13,7 +14,12 @@ interface Props {
   storeId?: number;
 }
 
-export default function ProductCard({ product, whatsappUrl, storeName, storeId }: Props) {
+export default function ProductCard({
+  product,
+  whatsappUrl,
+  storeName,
+  storeId,
+}: Props) {
   const resolvedStoreId = storeId ?? product.store_id;
   const detailHref = `/lojas/${resolvedStoreId}/produtos/${product.id}`;
   const ALL_SIZES = ["PP", "P", "M", "G", "GG", "XG"];
@@ -23,7 +29,9 @@ export default function ProductCard({ product, whatsappUrl, storeName, storeId }
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!whatsappUrl) return;
-    fetch(`${API_URL}/public/stores/${resolvedStoreId}/events/whatsapp`, { method: "POST" }).catch(() => {});
+    fetch(`${API_URL}/public/stores/${resolvedStoreId}/events/whatsapp`, {
+      method: "POST",
+    }).catch(() => {});
     const base = whatsappUrl.split("?text=")[0];
     const url = `${base}?text=Olá! Vi o produto "${product.name}" na loja ${storeName} no Vitrine CG e tenho interesse!`;
     window.open(url, "_blank");
@@ -61,7 +69,9 @@ export default function ProductCard({ product, whatsappUrl, storeName, storeId }
             {product.name}
           </h3>
           {product.description && (
-            <p className="text-gray-500 text-xs mt-1 line-clamp-2">{product.description}</p>
+            <p className="text-gray-500 text-xs mt-1 line-clamp-2">
+              {product.description}
+            </p>
           )}
 
           {showSizes && (
@@ -84,9 +94,14 @@ export default function ProductCard({ product, whatsappUrl, storeName, storeId }
             </div>
           )}
 
-          <p className="text-orange-600 font-black text-lg mt-2">
-            R$ {Number(product.price).toFixed(2).replace(".", ",")}
-          </p>
+          <div className="mt-2">
+            <PriceDisplay
+              price={product.price}
+              originalPrice={product.original_price}
+              showPrice={product.show_price}
+              size="sm"
+            />
+          </div>
         </div>
       </Link>
 

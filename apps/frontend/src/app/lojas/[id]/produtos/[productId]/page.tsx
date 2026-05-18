@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-
+import PriceDisplay from "@/components/product/PriceDisplay";
 async function getData(
   storeId: number,
   productId: number,
@@ -128,13 +128,18 @@ export default async function ProductPage({ params }: Props) {
 
               {/* Preço */}
               <div className="bg-orange-50 rounded-2xl p-4">
-                <p className="text-xs text-gray-500 mb-1">Preço</p>
-                <p className="text-3xl md:text-4xl font-black text-orange-600">
-                  {price}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Entre em contato para mais informações de pagamento
-                </p>
+                <p className="text-xs text-gray-500 mb-2">Preço</p>
+                <PriceDisplay
+                  price={product.price}
+                  originalPrice={product.original_price}
+                  showPrice={product.show_price}
+                  size="lg"
+                />
+                {product.show_price && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    Entre em contato para mais informações de pagamento
+                  </p>
+                )}
               </div>
 
               {/* Tamanhos */}

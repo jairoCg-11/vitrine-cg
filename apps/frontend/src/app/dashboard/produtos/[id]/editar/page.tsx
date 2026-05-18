@@ -20,6 +20,8 @@ interface Product {
   name: string;
   description: string | null;
   price: string;
+  original_price: string | null;
+  show_price: boolean;
   category: string | null;
   sizes: string | null;
   image_url: string | null;
@@ -38,6 +40,9 @@ export default function EditarProdutoPage() {
     name: "",
     description: "",
     price: "",
+    original_price: "",
+    show_price: true,
+    is_promo: false, // controla se o campo de preço original aparece
     category: "",
     is_available: true,
   });
@@ -87,6 +92,11 @@ export default function EditarProdutoPage() {
           name: found.name,
           description: found.description || "",
           price: String(found.price),
+          original_price: found.original_price
+            ? String(found.original_price)
+            : "",
+          show_price: found.show_price,
+          is_promo: !!found.original_price,
           category: found.category || "",
           is_available: found.is_available,
         });
@@ -109,18 +119,29 @@ export default function EditarProdutoPage() {
     setSuccess("");
     setLoading(true);
     try {
+      const body: Record<string, unknown> = {
+        name: form.name,
+        description: form.description || null,
+        price: parseFloat(form.price),
+        original_price:
+          form.is_promo && form.original_price
+            ? parseFloat(form.original_price)
+            : null,
+        show_price: form.show_price,
+        category: form.category || null,
+        sizes: selectedSizes.length > 0 ? selectedSizes.join(",") : null,
+        is_available: form.is_available,
+      };
+
       const res = await fetch(`${API_URL}/stores/me/products/${productId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...form,
-          price: parseFloat(form.price),
-          sizes: selectedSizes.length > 0 ? selectedSizes.join(",") : null,
-        }),
+        body: JSON.stringify(body),
       });
+
       if (res.ok) {
         setSuccess("Produto atualizado!");
       } else {
@@ -262,7 +283,6 @@ export default function EditarProdutoPage() {
             </span>
           </div>
 
-          {/* Grid de fotos existentes */}
           {product.images.length > 0 && (
             <div className="grid grid-cols-3 gap-3 mb-4">
               {product.images.map((img, index) => (
@@ -292,8 +312,6 @@ export default function EditarProdutoPage() {
                   </button>
                 </div>
               ))}
-
-              {/* Slot de upload — aparece quando tem menos de 3 fotos */}
               {product.images.length < MAX_IMAGES && (
                 <label className="h-28 rounded-xl border-2 border-dashed border-gray-300 hover:border-orange-400 hover:bg-orange-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-1">
                   <span className="text-2xl text-gray-300">+</span>
@@ -314,7 +332,6 @@ export default function EditarProdutoPage() {
             </div>
           )}
 
-          {/* Sem fotos — área de upload maior */}
           {product.images.length === 0 && (
             <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded-xl hover:border-orange-400 hover:bg-orange-50 transition-all cursor-pointer mb-4">
               <span className="text-4xl mb-2">📦</span>
@@ -389,42 +406,149 @@ export default function EditarProdutoPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Preço (R$) *
-                </label>
+            {/* ── Preço e promoção ─────────────────────────────────────────── */}
+            <div className="bg-gray-50 rounded-2xl p-4 space-y-4">
+              <h3 className="text-sm font-black text-gray-700">💰 Preço</h3>
+
+              {/* Checkbox exibir preço */}
+              <div className="flex items-center gap-3">
                 <input
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Categoria
-                </label>
-                <select
-                  value={form.category}
+                  type="checkbox"
+                  id="show_price"
+                  checked={form.show_price}
                   onChange={(e) =>
-                    setForm({ ...form, category: e.target.value })
+                    setForm({ ...form, show_price: e.target.checked })
                   }
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <label
+                  htmlFor="show_price"
+                  className="text-sm font-semibold text-gray-700"
                 >
-                  <option value="">Selecione...</option>
-                  {categories.map((c) => (
-                    <option key={c} value={c.toLowerCase()}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                  Exibir preço publicamente
+                </label>
               </div>
+              {!form.show_price && (
+                <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
+                  ⚠️ O preço ficará oculto. Clientes verão "Consultar preço".
+                </p>
+              )}
+
+              {/* Campo de preço atual */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    {form.is_promo
+                      ? "Preço promocional (R$) *"
+                      : "Preço (R$) *"}
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="0.01"
+                    value={form.price}
+                    onChange={(e) =>
+                      setForm({ ...form, price: e.target.value })
+                    }
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all bg-white"
+                  />
+                </div>
+
+                {/* Checkbox promoção */}
+                <div className="flex flex-col justify-end">
+                  <div className="flex items-center gap-3 mb-1">
+                    <input
+                      type="checkbox"
+                      id="is_promo"
+                      checked={form.is_promo}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          is_promo: e.target.checked,
+                          original_price: e.target.checked
+                            ? form.original_price
+                            : "",
+                        })
+                      }
+                      className="w-4 h-4 accent-red-500"
+                    />
+                    <label
+                      htmlFor="is_promo"
+                      className="text-sm font-semibold text-gray-700"
+                    >
+                      🔥 Em promoção
+                    </label>
+                  </div>
+                  {form.is_promo && (
+                    <p className="text-xs text-red-500">
+                      Informe o preço original abaixo
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Campo preço original — só aparece quando em promoção */}
+              {form.is_promo && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Preço original — De (R$) *
+                  </label>
+                  <input
+                    type="number"
+                    required={form.is_promo}
+                    min="0"
+                    step="0.01"
+                    value={form.original_price}
+                    onChange={(e) =>
+                      setForm({ ...form, original_price: e.target.value })
+                    }
+                    className="w-full border border-red-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all bg-white"
+                    placeholder="Ex: 59.90"
+                  />
+
+                  {/* Preview do visual de promoção */}
+                  {form.original_price &&
+                    form.price &&
+                    Number(form.original_price) > Number(form.price) && (
+                      <div className="mt-2 bg-white rounded-xl p-3 border border-orange-100">
+                        <p className="text-xs text-gray-400 mb-1">Preview:</p>
+                        <p className="text-sm text-gray-400 line-through">
+                          De R${" "}
+                          {Number(form.original_price)
+                            .toFixed(2)
+                            .replace(".", ",")}
+                        </p>
+                        <p className="text-lg font-black text-orange-600">
+                          Por R${" "}
+                          {Number(form.price).toFixed(2).replace(".", ",")}
+                        </p>
+                      </div>
+                    )}
+                </div>
+              )}
             </div>
 
+            {/* Categoria */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Categoria
+              </label>
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+              >
+                <option value="">Selecione...</option>
+                {categories.map((c) => (
+                  <option key={c} value={c.toLowerCase()}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tamanhos */}
             {form.category === "roupas" && (
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -445,6 +569,7 @@ export default function EditarProdutoPage() {
               </div>
             )}
 
+            {/* Disponível */}
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"

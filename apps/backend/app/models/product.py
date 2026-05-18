@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 
 from app.database import Base
 
@@ -16,7 +16,16 @@ class Product(Base):
 
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
+
+    # Preço atual do produto
     price = Column(Numeric(10, 2), nullable=False)
+
+    # Preço original — preenchido quando em promoção (price < original_price)
+    original_price = Column(Numeric(10, 2), nullable=True)
+
+    # Se False, exibe "Consultar preço" em vez do valor
+    show_price = Column(Boolean, default=True, nullable=False)
+
     category = Column(String(100), nullable=True)
     sizes = Column(String(100), nullable=True)
 

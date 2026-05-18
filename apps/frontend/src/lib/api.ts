@@ -19,7 +19,6 @@ export async function fetchAPI<T>(
   return res.json();
 }
 
-// Rotas públicas
 export const publicAPI = {
   getStores: () => fetchAPI<Store[]>("/public/stores"),
   getStore: (id: number) => fetchAPI<StoreDetail>(`/public/stores/${id}`),
@@ -30,7 +29,6 @@ export const publicAPI = {
     fetchAPI<Banner[]>("/public/banners", { cache: "no-store" }),
 };
 
-// Tipos
 export interface ProductImage {
   id: number;
   image_url: string;
@@ -58,6 +56,8 @@ export interface Product {
   name: string;
   description: string | null;
   price: string;
+  original_price: string | null;
+  show_price: boolean;
   category: string | null;
   sizes: string | null;
   image_url: string | null;

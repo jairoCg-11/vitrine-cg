@@ -4,7 +4,6 @@ from pydantic import BaseModel
 
 
 class PublicProductImageResponse(BaseModel):
-    """Imagem do produto visível para o consumidor."""
     id: int
     image_url: str
     order: int
@@ -14,12 +13,13 @@ class PublicProductImageResponse(BaseModel):
 
 
 class PublicProductResponse(BaseModel):
-    """Dados do produto visíveis para o consumidor."""
     id: int
     store_id: int
     name: str
     description: Optional[str]
     price: Decimal
+    original_price: Optional[Decimal]
+    show_price: bool
     category: Optional[str]
     sizes: Optional[str]
     image_url: Optional[str]
@@ -31,7 +31,6 @@ class PublicProductResponse(BaseModel):
 
 
 class PublicStoreResponse(BaseModel):
-    """Dados da loja visíveis para o consumidor."""
     id: int
     owner_id: int
     name: str
@@ -50,7 +49,6 @@ class PublicStoreResponse(BaseModel):
 
 
 class PublicStoreDetailResponse(BaseModel):
-    """Dados completos da loja com seus produtos."""
     id: int
     owner_id: int
     name: str
@@ -70,6 +68,5 @@ class PublicStoreDetailResponse(BaseModel):
 
 
 class SearchResponse(BaseModel):
-    """Resultado de busca — lojas e produtos encontrados."""
     stores: List[PublicStoreResponse] = []
     products: List[PublicProductResponse] = []
